@@ -93,19 +93,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
         )
         return markup
 
-    def __process_next_step(self, message):
-        try:
-            chat_id = message.chat.id
-            txt = message.text
-            if txt != "exit":
-                force_reply = types.ForceReply(selective=False)
-                text = f"text = {txt}; chat.id = {chat_id}; \n Для выхода из диалога введите - exit"
-                msg = self.bot.send_message(message.chat.id, text, reply_markup=force_reply)
-                self.bot.register_next_step_handler(msg, self.__process_next_step)
-        except ValueError as ex:
-            logging.exception(ex)
-            self.bot.reply_to(message, f"Exception - {ex}")
-
     def __check_email(self, message: types.Message, email: str):
         """Отправка запроса на сервис Disify для проверки email"""
         try:
