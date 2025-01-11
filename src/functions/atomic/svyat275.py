@@ -77,7 +77,7 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                 )
 
         @bot.callback_query_handler(func=None, config=self.example_keyboard_factory.filter())
-        def example_keyboard_callback(call: types.CallbackQuery):
+        def example_keyboard_callback_new(call: types.CallbackQuery):
             callback_data: dict = self.example_keyboard_factory.parse(callback_data=call.data)
             t_key_button = callback_data['t_key_button']
 
