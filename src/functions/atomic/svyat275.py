@@ -55,7 +55,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                     )
 
             else:
-                chat_id_msg = f"\nCHAT ID = {message.chat.id}"
                 msg = (
                     f"USER ID = {message.from_user.id} \n"
                     f"EXAMPLETOKEN = {self.__get_example_token()}"
