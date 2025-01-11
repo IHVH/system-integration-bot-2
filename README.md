@@ -19,6 +19,7 @@ CONECTION_PGDB=
 TBOTTOKEN=
 
 EXAMPLETOKEN=1234567890
+IPSTACK_API_KEY=
 
 ```
 
@@ -26,6 +27,7 @@ EXAMPLETOKEN=1234567890
 Links to information about tokens
 
 [GITHUBTOKEN](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+[ipstack](https://ipstack.com/))
 
 
 ## Adding telegram bot functions.
