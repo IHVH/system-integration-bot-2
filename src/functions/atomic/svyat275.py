@@ -76,24 +76,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                     reply_markup=self.__gen_markup()
                 )
 
-        @bot.callback_query_handler(func=None, config=self.example_keyboard_factory.filter())
-        def example_keyboard_callback_new(call: types.CallbackQuery):
-            callback_data: dict = self.example_keyboard_factory.parse(callback_data=call.data)
-            t_key_button = callback_data['t_key_button']
-
-            match (t_key_button):
-                case ('cb_yes'):
-                    bot.answer_callback_query(call.id, "Ответ ДА!")
-                case ('cb_no'):
-                    bot.answer_callback_query(call.id, "Ответ НЕТ!")
-                case ('force_reply'):
-                    force_reply = types.ForceReply(selective=False)
-                    text = "Отправьте текст для обработки в process_next_step"
-                    bot.send_message(call.message.chat.id, text, reply_markup=force_reply)
-                    bot.register_next_step_handler(call.message, self.__process_next_step)
-                case _:
-                    bot.answer_callback_query(call.id, call.data)
-
     def __get_example_token(self):
         token = os.environ.get("EXAMPLETOKEN")
         return token
