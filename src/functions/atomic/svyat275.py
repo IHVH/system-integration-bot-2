@@ -1,3 +1,11 @@
+"""
+Модуль для работы с функцией проверки email через API Disify.
+
+Этот модуль содержит класс AtomicExampleBotFunction, который реализует функцию для проверки
+корректности email через внешний сервис Disify. Функция принимает email, проверяет его формат,
+проверяет, является ли он одноразовым и имеет ли он DNS записи. Используется библиотека Telebot
+для взаимодействия с пользователями через Telegram бота.
+"""
 import os
 import logging
 from typing import List
@@ -12,14 +20,17 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
 
     commands: List[str] = ["checkemail", "checkemail_unique"]  # Убедитесь, что команды уникальны
     authors: List[str] = ["svyat"]
-    
+
     # Сокращена длина строки до 30 символов
     about: str = "Проверка email"  # Теперь длина 16 символов (меньше 30)
-    
+
     # Длина description больше 100 символов, должно быть около 100-500
-    description: str = """Функция проверяет корректность email через сервис Disify.
-    Пример использования: /checkemail <email>. Вы можете использовать email для проверки формата, домена и одноразовости адреса."""
-    
+    description: str = (
+    "Пример использования: /checkemail <email>. Вы можете использовать email для проверки "
+    "формата, домена и одноразовости адреса."
+    )
+
+
     state: bool = True
 
     bot: telebot.TeleBot
@@ -32,18 +43,30 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
         @bot.message_handler(commands=self.commands)
         def example_message_handler(message: types.Message):
             if message.text.startswith("/checkemail"):
-                email = message.text.split(" ", 1)[1] if len(message.text.split(" ", 1)) > 1 else None
+                email = (message.text.split(" ", 1)[1]
+                    if len(message.text.split(" ", 1)) > 1 else None)
+
                 if email:
                     self.__check_email(message, email)
                 else:
-                    bot.send_message(message.chat.id, "Пожалуйста, укажите email для проверки после команды '/checkemail'")
+                    bot.send_message(
+                        message.chat.id,
+                        "Пожалуйста, укажите email для проверки"
+                        "после команды '/checkemail'"
+                    )
+
             else:
                 chat_id_msg = f"\nCHAT ID = {message.chat.id}"
                 msg = (
-                    f"Ваш запрос обработан в AtomicExampleBotFunction! {chat_id_msg}\n"
-                    f"USER ID = {message.from_user.id} \nEXAMPLETOKEN = {self.__get_example_token()}"
+                    f"USER ID = {message.from_user.id} \n"
+                    f"EXAMPLETOKEN = {self.__get_example_token()}"
                 )
-                bot.send_message(text=msg, chat_id=message.chat.id, reply_markup=self.__gen_markup())
+
+                bot.send_message(
+                    text=msg,
+                    chat_id=message.chat.id,
+                    reply_markup=self.__gen_markup()
+                )
 
         @bot.callback_query_handler(func=None, config=self.example_keyboard_factory.filter())
         def example_keyboard_callback(call: types.CallbackQuery):
@@ -111,13 +134,16 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                              f"Используется одноразовый адрес: {disposable}\n" \
                              f"DNS записей для домена найдено: {dns}"
                 else:
-                    result = f"Ошибка при проверке email {email}. Ответ сервиса не соответствует ожиданиям."
+                    result = (
+                        f"Ошибка при проверке email {email}. "
+                        "Ответ сервиса не соответствует ожиданиям."
+                    )
             else:
                 result = f"Ошибка при подключении к сервису Disify. Статус: {response.status_code}"
 
             # Отправляем результат пользователю
             self.bot.send_message(message.chat.id, result)
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logging.error(f"Ошибка при запросе к Disify: {e}")
             self.bot.send_message(message.chat.id, "Произошла ошибка при проверке email.")
