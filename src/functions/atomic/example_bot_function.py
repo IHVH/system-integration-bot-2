@@ -33,7 +33,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
             chat_id_msg = f"\nCHAT ID = {message.chat.id}"
             msg = (
                 f"Ваш запрос обработан в AtomicExampleBotFunction! {chat_id_msg}\n"
-                f"USER ID = {message.from_user.id} \nEXAMPLETOKEN = {self.__get_example_token_new()}"
             )
             bot.send_message(text=msg, chat_id=message.chat.id, reply_markup=self.__gen_markup())
 
@@ -54,10 +53,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                     bot.register_next_step_handler(call.message, self.__process_next_step)
                 case _:
                     bot.answer_callback_query(call.id, call.data)
-
-    def __get_example_token_new(self):
-        token = os.environ.get("EXAMPLETOKEN")
-        return token
 
     def __gen_markup(self):
         markup = types.InlineKeyboardMarkup()
