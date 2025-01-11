@@ -1,6 +1,6 @@
-
 """Module implementation of the atomic function of the telegram bot. Example of implementation."""
 
+import os
 import logging
 from typing import List
 import telebot
@@ -16,7 +16,7 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
     about: str = "Пример функции бота!"
     description: str = """В поле  *description* поместите подробную информацию о работе функции.
     Описание способов использования, логики работы. Примеры вызова функции - /ebf 
-    """
+    Возможные параметры функции `/example`  """
     state: bool = True
 
     bot: telebot.TeleBot
@@ -32,6 +32,7 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
             chat_id_msg = f"\nCHAT ID = {message.chat.id}"
             msg = (
                 f"Ваш запрос обработан в AtomicExampleBotFunction! {chat_id_msg}\n"
+                f"USER ID = {message.from_user.id} \nEXAMPLETOKEN = {self.__get_example_token()}"
             )
             bot.send_message(text=msg, chat_id=message.chat.id, reply_markup=self.__gen_markup())
 
@@ -52,6 +53,10 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                     bot.register_next_step_handler(call.message, self.__process_next_step)
                 case _:
                     bot.answer_callback_query(call.id, call.data)
+
+    def __get_example_token(self):
+        token = os.environ.get("EXAMPLETOKEN")
+        return token
 
     def __gen_markup(self):
         markup = types.InlineKeyboardMarkup()
