@@ -72,26 +72,12 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
 
                 bot.send_message(
                     text=msg,
-                    chat_id=message.chat.id,
-                    reply_markup=self.__gen_markup()
+                    chat_id=message.chat.id
                 )
 
     def __get_example_token(self):
         token = os.environ.get("EXAMPLETOKEN")
         return token
-
-    def __gen_markup(self):
-        markup = types.InlineKeyboardMarkup()
-        markup.row_width = 2
-        yes_callback_data = self.example_keyboard_factory.new(t_key_button="cb_yes")
-        no_callback_data = self.example_keyboard_factory.new(t_key_button="cb_no")
-        force_reply_callback_data = self.example_keyboard_factory.new(t_key_button="force_reply")
-        markup.add(
-            types.InlineKeyboardButton("Да", callback_data=yes_callback_data),
-            types.InlineKeyboardButton("Нет", callback_data=no_callback_data),
-            types.InlineKeyboardButton("ForceReply", callback_data=force_reply_callback_data)
-        )
-        return markup
 
     def __check_email(self, message: types.Message, email: str):
         """Отправка запроса на сервис Disify для проверки email"""

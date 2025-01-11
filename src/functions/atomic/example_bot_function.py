@@ -1,7 +1,6 @@
 
 """Module implementation of the atomic function of the telegram bot. Example of implementation."""
 
-import os
 import logging
 from typing import List
 import telebot
