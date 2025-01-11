@@ -42,4 +42,3 @@ class AtomicBotFunctionABC(ABC):
         """Detailed information description of the bot function"""
         txt = self.about + " - " +self.description
         return txt
-    

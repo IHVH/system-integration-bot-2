@@ -1,4 +1,5 @@
 pyTelegramBotAPI
-psycopg2
+#psycopg2
 sqlalchemy
 sqlalchemy-utils
+pylint
