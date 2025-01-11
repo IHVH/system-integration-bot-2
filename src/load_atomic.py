@@ -9,7 +9,7 @@ from bot_func_abc import AtomicBotFunctionABC
 def load_atomic_functions(func_dir:str = "functions",
 atomic_dir:str = "atomic") -> List[AtomicBotFunctionABC]:
     """Loading atomic functions into a list"""
-    atomic_func_path = Path.cwd() / "src" / func_dir / atomic_dir
+    atomic_func_path = Path.cwd() / func_dir / atomic_dir
     suffix = ".py"
     lst = os.listdir(atomic_func_path)
     function_objects: List[AtomicBotFunctionABC] = []
