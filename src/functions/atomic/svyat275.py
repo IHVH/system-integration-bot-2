@@ -36,6 +36,16 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
     example_keyboard_factory: CallbackData
 
     def set_handlers(self, bot: telebot.TeleBot):
+        """
+    Настроить обработчики сообщений для заданного бота.
+
+    Этот метод регистрирует обработчики сообщений для различных команд
+    и callback-запросов. Он настраивает, как бот должен реагировать на
+    определённые пользовательские вводы.
+
+    Аргументы:
+        bot (telebot.TeleBot): Экземпляр бота, используемый для взаимодействия с пользователями.
+    """
         self.bot = bot
         self.example_keyboard_factory = CallbackData('t_key_button', prefix=self.commands[0])
 
