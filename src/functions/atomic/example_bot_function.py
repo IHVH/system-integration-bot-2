@@ -16,7 +16,7 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
     about: str = "Пример функции бота!"
     description: str = """В поле  *description* поместите подробную информацию о работе функции.
     Описание способов использования, логики работы. Примеры вызова функции - /ebf 
-    Возможные параметры функции `/example`  """
+    """
     state: bool = True
 
     bot: telebot.TeleBot

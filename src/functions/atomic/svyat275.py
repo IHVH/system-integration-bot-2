@@ -29,7 +29,6 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
     "формата, домена и одноразовости адреса."
     )
 
-
     state: bool = True
 
     bot: telebot.TeleBot
