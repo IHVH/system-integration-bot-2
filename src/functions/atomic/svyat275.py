@@ -1,6 +1,5 @@
 """
 Модуль для работы с функцией проверки email через API Disify.
-
 Этот модуль содержит класс AtomicExampleBotFunction, который реализует функцию для проверки
 корректности email через внешний сервис Disify. Функция принимает email, проверяет его формат,
 проверяет, является ли он одноразовым и имеет ли он DNS записи. Используется библиотека Telebot
@@ -121,7 +120,8 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
         try:
             # Отправляем GET запрос к API Disify
             url = f"https://www.disify.com/api/email/{email}"
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)  # Timeout of 10 seconds
+
 
             if response.status_code == 200:
                 data = response.json()
