@@ -145,5 +145,5 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
             self.bot.send_message(message.chat.id, result)
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка при запросе к Disify: {e}")
+            logging.error("Ошибка при запросе к Disify: %s", e)
             self.bot.send_message(message.chat.id, "Произошла ошибка при проверке email.")
