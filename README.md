@@ -48,3 +48,18 @@ pylint .\src\functions\atomic\<your_file>.py
 For an example, take a look at the file **[example_bot_function.py](https://github.com/IHVH/system-integration-bot-2/blob/master/src/functions/atomic/example_bot_function.py)**
 
 Explore the capabilities of the library that is used in the project [pyTelegramBotAPI](https://github.com/eternnoir/pyTelegramBotAPI).
+
+
+## How to Get OPENWEATHER_API_KEY
+
+To use the weather function in the bot, you need an API key from OpenWeatherMap. Here's how to get it:
+
+1. Go to [OpenWeatherMap](https://openweathermap.org).
+2. Click "Sign Up" and create an account:
+   - Enter your email.
+   - Set a password.
+   - Confirm your email (check your inbox or spam folder).
+3. Log in to your account.
+4. Go to "API keys" in your profile (usually at the top right).
+5. Copy your API key (it looks like a string of letters and numbers, e.g., `5d4f3e2a1b9c8d7e6f5a4b3c2d1e0f9`).
+6. Add the key to your `.env` file in the root of the project:
