@@ -29,11 +29,11 @@ class GithubAPICommits(AtomicBotFunctionABC):
 
         @bot.message_handler(commands=self.commands)
         def message_hendler_for_github_api(message: types.Message):
-            messeges = self.get_data(count=10)
+            messeges = self.get_data(count=2)
             for commit in messeges:
                 bot.send_message(text=commit, chat_id=message.chat.id)
 
-    def get_data(self, count: int = 2):
+    def get_data(self, count: int = 5):
         """Get data from githab """
 
         result = []
@@ -48,7 +48,12 @@ class GithubAPICommits(AtomicBotFunctionABC):
 
         for commit in list_commits:
 
-            msg = f"{commit['commit']['message']}"
-            result.append(msg)
+            date = commit['commit']['author']['date']
+            author = commit['commit']['author']['name']
+            commit_url = commit['html_url']
+            msg = commit['commit']['message']
+
+            message = f"author - {author} \n{msg} \n{date} {commit_url}"
+            result.append(message)
 
         return result
