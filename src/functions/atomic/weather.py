@@ -20,7 +20,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
     about: str = "Погода в городе"
     description: str = (
         "Этот бот позволяет узнать текущую погоду в указанном городе. "
-        "Используйте команду /weather <город> . Например: /weather Москва"
+        "Используйте команду /weather <город> . Например: /w eather Москва"
     )
     state: bool = True
 
