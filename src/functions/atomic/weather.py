@@ -31,7 +31,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
     api_url: str = "http://api.openweathermap.org/data/2.5/weather"
 
     def __init__(self):
-        """Инициализация класса WeatherBotFunction."""
+        
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
@@ -44,7 +44,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
         self.api_key = self.api_key or "dummy_key"
 
     def set_handlers(self, bot: telebot.TeleBot):
-        """Устанавливает обработчики команд для бота."""
+       
         if not self.state:
             self.logger.warning("Function disabled due to missing API key.")
             return
@@ -56,7 +56,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
 
         @bot.message_handler(commands=self.commands)
         def get_weather(message: types.Message):
-            """Обрабатывает команду /weather."""
+            """Обработка команды /weather."""
             try:
                 city = " ".join(message.text.split()[1:]).strip()
                 if not city:
@@ -86,7 +86,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
             bot.send_message(message.chat.id, weather_data)
 
     def fetch_weather(self, city: str) -> str:
-        """Получает данные о погоде для указанного города через OpenWeatherMap API."""
+        "Получаение OpenWeatherMap API."
         params = {
             "q": city,
             "appid": self.api_key,
