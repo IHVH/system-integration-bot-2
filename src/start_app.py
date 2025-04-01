@@ -12,7 +12,7 @@ from bot_middleware import Middleware
 from bot_callback_filter import BotCallbackCustomFilter
 
 class StartApp:
-    """Configuring and running the application"""
+    """Configuring and runn ing the application"""
 
     _LOGLEVEL_ENV_KEY = "LOGLEVEL"
     _TBOT_LOGLEVEL_ENV_KEY = "TBOT_LOGLEVEL"
