@@ -1,8 +1,3 @@
-"""
-Модуль для Telegram-бота, предоставляющий функционал получения текущей погоды
-в указанном городе с использованием API OpenWeatherMap.
-"""
-
 import os
 import logging
 from typing import List
