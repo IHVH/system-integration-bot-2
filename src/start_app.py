@@ -11,7 +11,7 @@ from load_atomic import load_atomic_functions
 from bot_middleware import Middleware
 from bot_callback_filter import BotCallbackCustomFilter
 
-class StartApp():
+class StartApp:
     """Configuring and running the application"""
 
     _LOGLEVEL_ENV_KEY = "LOGLEVEL"
@@ -22,7 +22,7 @@ class StartApp():
 
     def __init__(self, start_comannds: List[str]):
         self.logger = self.get_logger()
-        self.bot = self.__get_bot()
+        self.bot = self._get_bot()
         self.atom_functions_list = load_atomic_functions()
         self.__decorate_atomic_functions()
         self.__decorate_defoult_functions(start_comannds)
@@ -34,7 +34,7 @@ class StartApp():
         self.logger.critical('-= START =-')
         self.bot.infinity_polling()
 
-    def get_logger(self)-> logging.Logger:
+    def get_logger(self) -> logging.Logger:
         """Get a configured logger"""
         log = logging.getLogger(__name__)
         log.setLevel(self.__get_log_level(self._LOGLEVEL_ENV_KEY))
@@ -55,9 +55,12 @@ class StartApp():
             return levels[str_level]
         return levels["INFO"]
 
-    def __get_bot(self)-> telebot.TeleBot:
+    def _get_bot(self) -> telebot.TeleBot:
         """Get a configured bot"""
-        token = os.environ[self._TBOTTOKEN_ENV_KEY]
+        token = os.environ.get(self._TBOTTOKEN_ENV_KEY)
+        if not token:
+            self.logger.critical("TBOTTOKEN not found in environment variables. Exiting...")
+            sys.exit(1)
         log_level = self.__get_log_level(self._TBOT_LOGLEVEL_ENV_KEY)
         telebot.logger.setLevel(log_level)
         new_bot = telebot.TeleBot(token, use_class_middlewares=True)
@@ -81,7 +84,7 @@ class StartApp():
                     self.logger.info("%s - start OK!", funct)
                 else:
                     self.logger.info("%s - state FALSE!", funct)
-            except Exception as ex: # pylint: disable=broad-except
+            except Exception as ex:  # pylint: disable=broad-except
                 self.logger.error(ex)
                 funct.state = False
                 self.logger.warning("%s - start EXCEPTION!", funct)
@@ -90,22 +93,33 @@ class StartApp():
         """Decorate the function for handling startup commands
         and the function for handling uncaught messages"""
 
+        self.logger.info(f"Setting up default functions with start commands: {start_comannds}")
         self.keyboard_factory = CallbackData('app_key_button', prefix=start_comannds[0])
         description_callback_data = self.keyboard_factory.new(app_key_button="description")
 
         @self.bot.message_handler(commands=start_comannds)
         def start_message(message):
+            self.logger.info(f"Received start command from user {message.from_user.username}")
             txt = "Доступные функции: \n"
-            for funct in self.atom_functions_list:
-                txt += f"/{funct.commands[0]} - {funct.about} \n"
+            active_functions = [funct for funct in self.atom_functions_list if funct.state]
+            self.logger.info(f"Active functions: {[funct.commands[0] for funct in active_functions]}")
+            if not active_functions:
+                txt += "Нет доступных функций.\n"
+            for funct in active_functions:
+                cmd = funct.commands[0]
+                about = funct.about
+                txt += f"/{cmd} - {about}\n"
+                self.logger.info(f"Added command to start message: /{cmd} - {about}")
 
-            reply_markup=self.__gen_markup_button(description_callback_data)
+            reply_markup = self.__gen_markup_button(description_callback_data)
+            self.logger.info(f"Sending start message: {txt}")
             self.bot.send_message(text=txt, chat_id=message.chat.id, reply_markup=reply_markup)
 
         @self.bot.callback_query_handler(func=None, config=self.keyboard_factory.filter())
         def example_keyboard_callback(call: types.CallbackQuery):
             callback_data: dict = self.keyboard_factory.parse(callback_data=call.data)
             button = callback_data['app_key_button']
+            self.logger.info(f"Received callback query: {button}")
 
             match (button):
                 case ("description"):
@@ -115,6 +129,7 @@ class StartApp():
 
         @self.bot.message_handler(func=lambda message: True)
         def text_messages(message):
+            self.logger.info(f"Received text message: {message.text}")
             self.bot.reply_to(message, "Text = " + message.text)
             cmd = "\n /".join(start_comannds)
             msg = f"To begin, enter one of the commands \n /{cmd}"
