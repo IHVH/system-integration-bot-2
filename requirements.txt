@@ -3,4 +3,5 @@ psycopg2
 sqlalchemy
 sqlalchemy-utils
 pylint
+python-dotenv
 requests

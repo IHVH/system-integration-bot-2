@@ -1,6 +1,11 @@
 """Main module for running the application"""
 
+
+from dotenv import load_dotenv
 from start_app import StartApp
+
+# Загружаем переменные из .env
+load_dotenv()
 
 _START_COMANDS = ["start", "help", "info", "s", "h", "i"]
 
