@@ -56,7 +56,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
 
         @bot.message_handler(commands=self.commands)
         def get_weather(message: types.Message):
-            """Обработка команды /weather."""
+            """Обрабатывает команду /weather."""
             try:
                 city = " ".join(message.text.split()[1:]).strip()
                 if not city:
@@ -86,7 +86,7 @@ class WeatherBotFunction(AtomicBotFunctionABC):
             bot.send_message(message.chat.id, weather_data)
 
     def fetch_weather(self, city: str) -> str:
-        "Получаение OpenWeatherMap API."
+        """Получает данные о погоде для указанного города через OpenWeatherMap API."""
         params = {
             "q": city,
             "appid": self.api_key,
