@@ -6,7 +6,10 @@ from pathlib import Path
 from typing import List
 from bot_func_abc import AtomicBotFunctionABC
 
-def load_atomic_functions(func_dir: str = "functions", atomic_dir: str = "atomic") -> List[AtomicBotFunctionABC]:
+def load_atomic_functions(
+    func_dir: str = "functions",
+    atomic_dir: str = "atomic"
+) -> List[AtomicBotFunctionABC]:
     """Loading atomic functions into a list"""
     atomic_func_path = Path.cwd() / "src" / func_dir / atomic_dir
     suffix = ".py"
@@ -27,7 +30,7 @@ def load_atomic_functions(func_dir: str = "functions", atomic_dir: str = "atomic
                         obj: AtomicBotFunctionABC = cls()
                         function_objects.append(obj)
                         print(f"{name} - Added!")
-            except Exception as e:
+            except ImportError as e:  # Уточняем тип исключения
                 print(f"Error loading module {module_name}: {e}")
 
     print(f"Total functions loaded: {len(function_objects)}")
