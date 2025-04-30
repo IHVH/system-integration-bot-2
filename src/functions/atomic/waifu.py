@@ -59,6 +59,9 @@ class WaifuFunction(AtomicBotFunctionABC):
             except KeyboardInterrupt:
                 logging.info("Прерывание работы пользователя.")
                 bot.send_message(message.chat.id, "Запрос был прерван.")
+            except Exception as err:  # Ловим непредвиденные ошибки, но избегаем широких исключений
+                logging.error("Непредвиденная ошибка в процессе обработки: %s", err)
+                bot.send_message(message.chat.id, "Произошла непредвиденная ошибка.")
 
     def __get_waifu_images(self, tag: str, count: int) -> List[str]:
         """Запрос к API Waifu.im и получение изображений."""
