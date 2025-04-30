@@ -15,8 +15,8 @@ class QRBotFunction(AtomicBotFunctionABC):
     about: str = "Создает QR-код из ссылки"
     description: str = """Функция предназначена для создания QR-кода при помощи API QRtag.
         Для вызова функции можно использовать следующие команды:
-        /make_qr_png для создания png
-        /make_qr_svg для создания svg
+        `/make_qr_png` для создания png
+        `/make_qr_svg` для создания svg
         Параметры:
             Обязательные:
                 [ссылка] 
