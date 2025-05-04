@@ -15,8 +15,7 @@ class GameDealsFunction(AtomicBotFunctionABC):
     commands: List[str] = ["search_deals", "deals"]
     authors: List[str] = ["VITAMINkaGG"]
     about: str = "Поиск выгодных игр"
-    description: str = """
-        Функция позволяет искать игровые предложения через API CheapShark.
+    description: str = """Функция позволяет искать игровые предложения через API CheapShark.
         Используйте /search_deals для запуска. Доступны фильтры:
         - По названию игры
         - По максимальной цене

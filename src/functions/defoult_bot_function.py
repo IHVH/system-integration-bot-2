@@ -92,7 +92,11 @@ class DefoultBotFunction(AtomicBotFunctionABC):
         for author in funct.authors:
             authors += "https://github.com/" + author
 
-        cmd = "\n /".join(funct.commands)
-        msg = f"{funct.about} \n /{cmd} \n{funct.description} \n"
+        comands = ""
+        for cmd in funct.commands:
+            comands += "`/" + cmd + "` \n"
+
+        desc = funct.description.replace("_", "\\_")
+        msg = f"{funct.about} \n{comands}{desc} \n"
         msg += f"Авторы: {authors}"
         return msg
