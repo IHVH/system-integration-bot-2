@@ -36,7 +36,7 @@ class AtomicCoinMarketFunction(AtomicBotFunctionABC):
         """Set message handlers"""
 
         self.bot = bot
-        self.coin_keyboard_factory = CallbackData("action", "coin_id", prefix="crypto")
+        self.coin_keyboard_factory = CallbackData("action", "coin_id", prefix=self.commands[0])
 
         @bot.message_handler(commands=self.commands)
         def crypto_message_handler(message: types.Message):
