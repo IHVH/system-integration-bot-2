@@ -1,81 +1,102 @@
 """
-Модуль для интеграции с API Waifu.im и реализации функциональности поиска аниме-изображений.
+Интеграция с API waifu.im — отправка изображений по тегу.
 """
 
 import logging
 from typing import List
 import requests
 from telebot import TeleBot, types
+from telebot.callback_data import CallbackData
 from bot_func_abc import AtomicBotFunctionABC
 
 
-class WaifuFunction(AtomicBotFunctionABC):
-    """Функция для поиска изображений по тегу с использованием Waifu.im API."""
+class WaifuImageFunction(AtomicBotFunctionABC):
+    """Функция для получения изображений из API waifu.im."""
 
     commands: List[str] = ["waifu"]
-    authors: List[str] = ["ТВОЙ_НИК"]
-    about: str = "Поиск аниме изображений по тегу"
+    authors: List[str] = ["Герлеман Андрей Антонович, Github: fckngraccoon"]
+    about: str = "Отправка изображений по тегам с сайта waifu.im"
     description: str = (
-        "Позволяет искать аниме изображения по тегу.\n"
-        "Пример: /waifu maid 3\n"
-        "Выведет 3 изображения с тегом 'maid'."
+        "Позволяет искать и отправлять изображения с сайта waifu.im по тегам. "
+        "Введите тег и количество изображений (от 1 до 10)."
     )
     state: bool = True
 
     bot: TeleBot
+    callback_factory: CallbackData
 
     def set_handlers(self, bot: TeleBot):
-        """Регистрирует обработчики команды /waifu."""
+        """Устанавливает обработчики команд и колбэков."""
         self.bot = bot
+        self.callback_factory = CallbackData("waifu_action", prefix=self.commands[0])
 
         @bot.message_handler(commands=self.commands)
-        def waifu_handler(message: types.Message):
-            """Обработчик команды /waifu <тег> <кол-во>."""
-            try:
-                args = message.text.strip().split()[1:]  # Пропускаем /waifu
-                if not args:
-                    bot.send_message(
-                        message.chat.id,
-                        "Укажи тег и (опционально) количество. Пример: /waifu maid 3"
-                    )
-                    return
+        def command_handler(message: types.Message):
+            tags = self.__get_available_tags()
+            if not tags:
+                bot.send_message(message.chat.id, "Не удалось получить список тегов.")
+                return
 
-                tag = args[0]
-                count = int(args[1]) if len(args) > 1 else 1
-                images = self.__get_waifu_images(tag, count)
+            tags_str = ", ".join(tags)
+            prompt = (
+                f"Введите тег (доступные: {tags_str}) и количество изображений (1–10), "
+                "например: `waifu 3`"
+            )
+            bot.send_message(message.chat.id, prompt, parse_mode="Markdown")
+            bot.register_next_step_handler(message, self.__process_waifu_request)
 
-                if not images:
-                    bot.send_message(message.chat.id, "Ничего не найдено по тегу.")
-                    return
-
-                for url in images:
-                    bot.send_photo(message.chat.id, photo=url)
-
-            except ValueError:
-                bot.send_message(message.chat.id, "Неверный формат количества изображений.")
-            except requests.exceptions.RequestException as err:  # Ловим только ошибки запросов
-                logging.error("Ошибка при запросе к API Waifu.im: %s", err)
-                bot.send_message(message.chat.id, "Ошибка при запросе к API.")
-            except KeyboardInterrupt:
-                logging.info("Прерывание работы пользователя.")
-                bot.send_message(message.chat.id, "Запрос был прерван.")
-            except Exception as err:  # Ловим непредвиденные ошибки, но избегаем широких исключений
-                logging.error("Непредвиденная ошибка в процессе обработки: %s", err)
-                bot.send_message(message.chat.id, "Произошла непредвиденная ошибка.")
-
-    def __get_waifu_images(self, tag: str, count: int) -> List[str]:
-        """Запрос к API Waifu.im и получение изображений."""
-        url = "https://api.waifu.im/search"
-        params = {
-            "included_tags": [tag],
-            "limit": count
-        }
-
+    def __process_waifu_request(self, message: types.Message):
+        """Обрабатывает команду /waifu: получает изображения по тегу и количеству."""
         try:
-            response = requests.get(url, params=params, timeout=10)
+            parts = message.text.strip().split()
+            if len(parts) != 2:
+                self.bot.send_message(message.chat.id, "Введите тег и количество через пробел.")
+                return
+
+            tag, count_str = parts
+            count = int(count_str)
+            if not 1 <= count <= 10:
+                self.bot.send_message(
+                    message.chat.id,
+                    "Количество изображений должно быть от 1 до 10."
+                )
+                return
+
+            images = self.__fetch_waifu_images(tag, count)
+            if not images:
+                self.bot.send_message(message.chat.id, "Изображения не найдены.")
+                return
+
+            for image in images:
+                self.bot.send_photo(message.chat.id, image["url"])
+
+        except ValueError:
+            self.bot.send_message(message.chat.id, "Количество должно быть числом.")
+        except requests.exceptions.RequestException as exc:
+            logging.exception("Ошибка при обращении к API waifu.im: %s", exc)
+            self.bot.send_message(message.chat.id, "Произошла ошибка при получении изображений.")
+
+
+    def __fetch_waifu_images(self, tag: str, count: int) -> List[dict]:
+        """Отправляет запрос к API waifu.im и возвращает список изображений."""
+        try:
+            response = requests.get(
+                "https://api.waifu.im/search/",
+                params={"included_tags": tag, "many": "true", "amount": count},
+                timeout=10
+            )
             response.raise_for_status()
-            data = response.json()
-            return [img["url"] for img in data.get("images", [])]
-        except requests.exceptions.RequestException as err:
-            logging.error("Ошибка при обращении к Waifu.im: %s", err)
+            return response.json().get("images", [])
+        except requests.exceptions.RequestException as exc:
+            logging.error("Ошибка при обращении к API waifu.im: %s", exc)
+            return []
+
+    def __get_available_tags(self) -> List[str]:
+        """Получает список доступных тегов из API."""
+        try:
+            response = requests.get("https://api.waifu.im/tags", timeout=10)
+            response.raise_for_status()
+            return [tag["name"] for tag in response.json().get("versatile", [])]
+        except requests.exceptions.RequestException as exc:
+            logging.warning("Не удалось получить теги с waifu.im: %s", exc)
             return []
