@@ -87,8 +87,8 @@ class WaifuFunction(AtomicBotFunctionABC):
         try:
             images = self.__fetch_waifu_images(tag, amount)
             if not images:
-                self.bot.send_message(
-                    message.chat.id,
+                self.bot.send_message( 
+                    message.chat.id, 
                     "Изображения не найдены. Проверьте тег."
                 )
                 return
