@@ -19,7 +19,7 @@ class WaifuFunction(AtomicBotFunctionABC):
 
     commands: List[str] = ["waifu", "waifu_tags"]
     authors: List[str] = ["Герлеман Андрей Антонович, Github: fckngraccoon"]
-    about: str = "Получение случайных аниме-изображений"
+    about: str = "Случайные waifu"
     description: str = (
         "Используйте /waifu <тег> <количество (по желанию)>.\n"
         "Пример: /waifu waifu 3\n"
