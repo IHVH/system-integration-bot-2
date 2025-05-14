@@ -3,6 +3,7 @@
 import os
 import typing
 import logging
+import datetime
 import requests
 import telebot
 from telebot import types
@@ -11,7 +12,7 @@ from bot_func_abc import AtomicBotFunctionABC
 class CurrencyBotFunction(AtomicBotFunctionABC):
     """Модуль для получения актуального курса валют через Telegram-бота."""
     commands: typing.List[str] = ["currency"]
-    authors: typing.List[str] = ["YourGitHubUsername"]
+    authors: typing.List[str] = ["p1aG790"]
     about: str = "Курс валют"
     description: str = (
         "Показывает текущий курс валюты относительно рубля. "
@@ -21,8 +22,8 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
 
     bot: telebot.TeleBot
     logger: logging.Logger
-    api_key: str = os.getenv("EXCHANGE_RATE_API_KEY", "dummy_key")
-    api_url: str = "https://v6.exchangerate-api.com/v6/6e39387be5f5a112f9967f6a/latest/RUB"
+    api_key: str = "your_exchange_rate_api_key_here"
+    api_url: str = "https://v6.exchangerate-api.com/v6/{api_key}/latest/RUB"
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -80,5 +81,4 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
 
     def get_current_date(self) -> str:
         """Возвращает текущую дату в формате день.месяц.год."""
-        import datetime
         return datetime.datetime.now().strftime("%d.%m.%Y")
