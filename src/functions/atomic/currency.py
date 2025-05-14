@@ -1,19 +1,22 @@
 """Модуль для получения курса валют"""
 
+import os
+import typing
 import logging
 import requests
-from typing import List
 import telebot
 from telebot import types
 from bot_func_abc import AtomicBotFunctionABC
-import os
 
 class CurrencyBotFunction(AtomicBotFunctionABC):
     """Модуль для получения актуального курса валют через Telegram-бота."""
-    commands: List[str] = ["currency"]
-    authors: List[str] = ["p1aG790"]
+    commands: typing.List[str] = ["currency"]
+    authors: typing.List[str] = ["YourGitHubUsername"]
     about: str = "Курс валют"
-    description: str = "Показывает текущий курс валюты относительно рубля. Используйте: /currency <валюта> (например, /currency USD)"
+    description: str = (
+        "Показывает текущий курс валюты относительно рубля. "
+        "Используйте: /currency <валюта> (например, /currency USD)"
+    )
     state: bool = True
 
     bot: telebot.TeleBot
@@ -56,6 +59,7 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
                 bot.send_message(message.chat.id, f"Не удалось получить курс для {currency}.")
 
     def fetch_currency_rate(self, currency: str) -> float:
+        """Получает курс валюты через ExchangeRate-API."""
         url = self.api_url.format(api_key=self.api_key)
         response = requests.get(url, timeout=10)
         data = response.json()
@@ -75,5 +79,6 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
         return inverted_rate
 
     def get_current_date(self) -> str:
-        from datetime import datetime
-        return datetime.now().strftime("%d.%m.%Y")
+        """Возвращает текущую дату в формате день.месяц.год."""
+        import datetime
+        return datetime.datetime.now().strftime("%d.%m.%Y")
