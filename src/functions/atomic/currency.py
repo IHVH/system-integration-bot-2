@@ -10,8 +10,10 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
     commands: List[str] = ["currency"]
     authors: List[str] = ["p1aG790"]
     about: str = "Курс валют"
-    description: str = "Показывает текущий курс валюты относительно рубля. Используйте: /currency <валюта> (например, /currency USD)"
-    state: bool = True
+    description = ("Показывает текущий курс валюты относительно рубля." 
+                   "Используйте: /currency <валюта> (например, /currency USD)"
+    )
+    state = True
 
     bot: telebot.TeleBot
     logger: logging.Logger
