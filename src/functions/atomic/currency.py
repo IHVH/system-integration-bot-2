@@ -22,7 +22,7 @@ class CurrencyBotFunction(AtomicBotFunctionABC):
 
     bot: telebot.TeleBot
     logger: logging.Logger
-    api_key: str = "your_exchange_rate_api_key_here"
+    api_key: str = os.getenv("EXCHANGE_RATE_API_KEY", "dummy_key")
     api_url: str = "https://v6.exchangerate-api.com/v6/{api_key}/latest/RUB"
 
     def __init__(self):
