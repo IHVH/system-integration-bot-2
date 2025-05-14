@@ -1,27 +1,21 @@
-"""Модуль для получения курса валют"""
-
 import logging
 import requests
 from typing import List
 import telebot
 from telebot import types
 from bot_func_abc import AtomicBotFunctionABC
+import os
 
 class CurrencyBotFunction(AtomicBotFunctionABC):
-    """Модуль для получения актуального курса валют через Telegram-бота."""
-
     commands: List[str] = ["currency"]
-    authors: List[str] = ["p1aG790"] 
+    authors: List[str] = ["p1aG790"]
     about: str = "Курс валют"
-    description: str = (
-        "Показывает текущий курс валюты относительно рубля. "
-        "Используйте: /currency <валюта> (например, /currency USD)"
-    )
+    description: str = "Показывает текущий курс валюты относительно рубля. Используйте: /currency <валюта> (например, /currency USD)"
     state: bool = True
 
     bot: telebot.TeleBot
     logger: logging.Logger
-    api_key: str = "your_exchange_rate_api_key_here"  
+    api_key: str = os.environ.get("EXCHANGE_RATE_API_KEY")
     api_url: str = "https://v6.exchangerate-api.com/v6/{api_key}/latest/RUB"
 
     def __init__(self):
