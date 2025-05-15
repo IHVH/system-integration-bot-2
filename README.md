@@ -13,20 +13,6 @@ Each of the functions must implement interaction with an external information sy
 
 To run locally, add an `.env` file with your keys to the root of the project. Or add appropriate values to the environment variables of your operating system.
 
-```
-LOGLEVEL=ERROR
-TBOT_LOGLEVEL=ERROR
-CONECTION_PGDB=
-TBOTTOKEN=
-
-EXAMPLETOKEN=1234567890
-IPSTACK_API_KEY=
-OPENWEATHER_API_KEY=
-COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
-
-
-```
-
 ## Tokens
 
 Links to information about tokens
@@ -38,6 +24,19 @@ Links to information about tokens
 [OPENWEATHER_API_KEY](https://openweathermap.org). - To receive a token for the weather function, register and create a key on the OpenWeatherMap platform.
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
+
+```
+LOGLEVEL=ERROR
+TBOT_LOGLEVEL=ERROR
+CONECTION_PGDB=
+TBOTTOKEN=
+
+EXAMPLETOKEN=1234567890
+IPSTACK_API_KEY=
+OPENWEATHER_API_KEY=
+COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
+
+```
 
 ## Adding telegram bot functions.
 
