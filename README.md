@@ -25,13 +25,17 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
 
+<<<<<<< HEAD
 [FREECURRENCY_API_KEY](https://freecurrencyapi.com/).
 
+=======
+>>>>>>> cd8cb6737e2e5662ba2d973a3c3adf02c3523214
 ```
 LOGLEVEL=ERROR
 TBOT_LOGLEVEL=ERROR
 CONECTION_PGDB=
 TBOTTOKEN=
+<<<<<<< HEAD
 FREECURRENCY_API_KEY=<your_free_currency_api_key>
 EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
@@ -97,6 +101,9 @@ TBOT_LOGLEVEL=ERROR
 CONECTION_PGDB=
 TBOTTOKEN=
 FREECURRENCY_API_KEY=
+=======
+
+>>>>>>> cd8cb6737e2e5662ba2d973a3c3adf02c3523214
 EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
