@@ -1,0 +1,69 @@
+kind: pipeline
+type: docker
+name: sysbot
+
+steps:
+- name: sysbot first step
+  image: python:3
+  commands:
+  - pip install -r requirements.txt
+  - python -m unittest discover -s src -p "test_all_branches_*" -v
+
+
+- name: sysbot image publish 
+  image: plugins/docker
+  settings:
+    username: root
+    password: pa55word
+    insecure: true
+    repo: 192.168.1.111:5000/tvi/sysbot
+    registry: 192.168.1.111:5000
+    dockerfile: Dockerfile
+    tags: latest
+  depends_on:
+  - sysbot first step
+  when:
+    branch:
+    - master
+
+- name: sysbot ssh commands
+  image: appleboy/drone-ssh
+  settings:
+    host: 192.168.1.111
+    username: root
+    password: 
+      from_secret: sshpass
+    port: 22
+    script:
+    - docker stop sysbot
+    - docker rm sysbot
+    - docker pull 192.168.1.111:5000/tvi/sysbot:latest
+    - docker run -t -i --name sysbot --restart=always -d --env-file /sysbot/.env 192.168.1.111:5000/tvi/sysbot:latest
+  depends_on:
+  - sysbot image publish
+  when:
+    branch:
+    - master
+
+- name: sysbot send telegram notification
+  image: appleboy/drone-telegram
+  settings:
+    token:
+      from_secret: tbot_token
+    to: 
+      from_secret: chat_id
+    message: >
+      {{#success build.status}}
+        🦾🤖 Я обновился! 
+      {{else}}
+        🚑🤖 Что-то пошло не так! 
+        Build {{build.number}}
+      {{/success}}
+  depends_on:
+  - sysbot ssh commands
+  when:
+    status:
+    - success
+    - failure
+    branch:
+    - master

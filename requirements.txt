@@ -1,0 +1,6 @@
+pyTelegramBotAPI
+psycopg2
+sqlalchemy
+sqlalchemy-utils
+pylint
+requests
