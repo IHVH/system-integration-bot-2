@@ -70,7 +70,7 @@ class AtomicCurrencyRateFunction(AtomicBotFunctionABC):
 
     def __get_api_key(self) -> str:
         """Возвращает API-ключ из переменных окружения."""
-        api_key = os.environ.get("CURRENCY_API_KEY")
+        api_key = os.environ.get("FREE_CURRENCY_API_KEY")
         if not api_key:
             raise RuntimeError(
                 "CURRENCY_API_KEY не найден в переменных окружения!")
