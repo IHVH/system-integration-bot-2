@@ -14,7 +14,7 @@ from bot_func_abc import AtomicBotFunctionABC
 # Load environment variables from .env file
 load_dotenv()
 
-API_KEY = os.getenv('CURRENCY_API_KEY')
+API_KEY = os.getenv('FREE_CURRENCY_API_KEY')
 API_URL = f"https://api.freecurrencyapi.com/v1/latest?apikey= {API_KEY}"
 REQUEST_TIMEOUT = 10  # Define a constant for timeout
 
