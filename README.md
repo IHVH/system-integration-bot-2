@@ -37,7 +37,7 @@ EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
 COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
-CURRENCY_API_KEY=<your_free_currency_api_key>
+CURRENCY_API_KEY=
 
 ```
 
