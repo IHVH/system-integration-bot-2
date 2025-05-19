@@ -1,4 +1,5 @@
-"""Module implementation of the atomic function for currency exchange rates."""
+"""Модуль для получения курса выбранной валюты к RUB через currencyfreaks.com"""
+
 import os
 import logging
 from typing import List
@@ -6,193 +7,104 @@ import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
-from dotenv import load_dotenv
-
-# Assuming bot_func_abc is available in the project
 from bot_func_abc import AtomicBotFunctionABC
 
-# Load environment variables from .env file
-load_dotenv()
 
-API_KEY = os.getenv('CURRENCY_API_KEY')
-API_URL = f"https://api.freecurrencyapi.com/v1/latest?apikey= {API_KEY}"
-REQUEST_TIMEOUT = 10  # Define a constant for timeout
-
-
-class AtomicCurrencyFunction(AtomicBotFunctionABC):
-    """Implementation of atomic function for currency exchange rates"""
+class AtomicCurrencyRateFunction(AtomicBotFunctionABC):
+    """Функция для получения курса выбранной валюты к RUB через currencyfreaks.com"""
 
     commands: List[str] = ["currency"]
-    authors: List[str] = ["Jorik"]  # Replace with your name or alias
+    authors: List[str] = ["AI"]
     about: str = "Узнать курс валют"
-    description: str = """Функция предоставляет актуальный курс выбранной валюты к рублю.
-    Использование: /currency
-    Доступные валюты: USD, EUR, GBP, JPY, CNY, CHF
-    Данные обновляются в реальном времени через API FreeCurrencyAPI."""
+    description: str = (
+        "Функция выводит список валют и позволяет узнать их курс к RUB.\n"
+        "Используйте команду /currency и выберите валюту.\n"
+        "Требуется переменная окружения CURRENCY_API_KEY в .env"
+    )
     state: bool = True
 
     bot: telebot.TeleBot
     currency_keyboard_factory: CallbackData
+    CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "CHF", "RUB"]
+    API_URL = "https://api.currencyfreaks.com/v2.0/rates/latest"
 
     def set_handlers(self, bot: telebot.TeleBot):
-        """Set message handlers"""
-
+        """Регистрирует хендлеры для команды /currency и inline-клавиатуры."""
         self.bot = bot
-        # Define callback data factory for currency buttons
         self.currency_keyboard_factory = CallbackData(
-            "currency_action", "currency_code", prefix=self.commands[0]
-        )
+            "currency", "code", prefix=self.commands[0])
 
         @bot.message_handler(commands=self.commands)
         def currency_message_handler(message: types.Message):
-            self.show_currency_options(message)
+            """Обрабатывает команду /currency и выводит клавиатуру выбора валюты."""
+            markup = self.__gen_currency_markup()
+            bot.send_message(
+                message.chat.id,
+                "Выберите валюту, чтобы узнать её курс (в RUB):",
+                reply_markup=markup
+            )
 
-        @bot.callback_query_handler(
-            func=None, config=self.currency_keyboard_factory.filter()
-        )
+        @bot.callback_query_handler(func=None,
+                                    config=self.currency_keyboard_factory.filter())
         def currency_keyboard_callback(call: types.CallbackQuery):
-            self.handle_currency_button(call)
-
-    def show_currency_options(self, message: types.Message) -> None:
-        """Отправляет сообщение с кнопками выбора валюты."""
-        # Define the inline keyboard layout
-        keyboard = [
-            [
-                types.InlineKeyboardButton(
-                    "USD",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="USD"
-                    )
-                ),
-                types.InlineKeyboardButton(
-                    "EUR",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="EUR"
-                    )
-                ),
-                types.InlineKeyboardButton(
-                    "GBP",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="GBP"
-                    )
-                ),
-            ],
-            [
-                types.InlineKeyboardButton(
-                    "JPY",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="JPY"
-                    )
-                ),
-                types.InlineKeyboardButton(
-                    "CNY",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="CNY"
-                    )
-                ),
-                types.InlineKeyboardButton(
-                    "CHF",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="CHF"
-                    )
-                ),
-            ],
-            [
-                types.InlineKeyboardButton(
-                    "RUB",
-                    callback_data=self.currency_keyboard_factory.new(
-                        currency_action="get_rate", currency_code="RUB"
-                    )
-                ),
-            ],
-        ]
-
-        reply_markup = types.InlineKeyboardMarkup(keyboard)
-
-        self.bot.send_message(
-            chat_id=message.chat.id,
-            text='Выберите валюту, чтобы узнать её курс (в RUB):',
-            reply_markup=reply_markup
-        )
-
-    def handle_currency_button(self, call: types.CallbackQuery) -> None:
-        """Обрабатывает нажатия кнопок с выбором валюты."""
-        # Acknowledge the callback query
-        self.bot.answer_callback_query(call.id)
-
-        try:
-            # Parse callback data to get action and currency code
+            """Обрабатывает выбор валюты с клавиатуры и выводит курс."""
             callback_data: dict = self.currency_keyboard_factory.parse(
-                callback_data=call.data
-            )
-            action = callback_data["currency_action"]
-            currency = callback_data["currency_code"]
+                callback_data=call.data)
+            code = callback_data["code"]
+            try:
+                rate = self.__get_currency_rate(code)
+                if rate is not None:
+                    text = f"Курс {code} к RUB: {rate:.4f}"
+                else:
+                    text = f"Не удалось получить курс для {code}."
+                bot.answer_callback_query(call.id)
+                bot.send_message(call.message.chat.id, text)
+            except requests.RequestException as ex:
+                logging.exception("Ошибка при получении курса валюты: %s", ex)
+                bot.answer_callback_query(
+                    call.id, "Ошибка при получении курса.")
+            except Exception as ex:  # pylint: disable=broad-except
+                logging.exception("Неизвестная ошибка: %s", ex)
+                bot.answer_callback_query(
+                    call.id, "Неизвестная ошибка при получении курса.")
 
-            if action != "get_rate":
-                self.bot.edit_message_text(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    text="Неизвестное действие кнопки."
-                )
-                return
+    def __get_api_key(self) -> str:
+        """Возвращает API-ключ из переменных окружения."""
+        api_key = os.environ.get("CURRENCY_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "CURRENCY_API_KEY не найден в переменных окружения!")
+        return api_key
 
-            # Get currency rates from API
-            response = requests.get(
-                API_URL,
-                timeout=REQUEST_TIMEOUT
-            )
+    def __get_currency_rate(self, code: str) -> float:
+        """Запрашивает курс выбранной валюты к RUB через currencyfreaks.com."""
+        if code == "RUB":
+            return 1.0
+        params = {
+            "apikey": self.__get_api_key(),
+            "base": code,
+            "symbols": "RUB"
+        }
+        try:
+            response = requests.get(self.API_URL, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
+            rub_rate = data.get("rates", {}).get("RUB")
+            if rub_rate:
+                return float(rub_rate)
+            return None
+        except requests.RequestException as ex:
+            logging.exception("Ошибка запроса к API валют: %s", ex)
+            return None
 
-            if not isinstance(data, dict) or 'data' not in data:
-                self.bot.edit_message_text(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    text="Ошибка: неверный формат данных от API."
-                )
-                return
-
-            rates = data['data']
-
-            if currency not in rates or 'RUB' not in rates:
-                self.bot.edit_message_text(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    text=f"Не удалось получить курс для {currency} или RUB."
-                )
-                return
-
-            rate_usd = rates[currency]
-            rub_rate_usd = rates['RUB']
-
-            if rub_rate_usd == 0:
-                self.bot.edit_message_text(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    text="Невозможно рассчитать курс к RUB (курс RUB к USD равен 0)."
-                )
-                return
-
-            rate_rub = rate_usd / rub_rate_usd
-
-            self.bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                text=f"1 {currency} = {rate_rub:.4f} RUB"
-            )
-
-        except requests.exceptions.RequestException as e:
-            logging.exception("Error fetching currency rates from API: %s", e)
-            self.bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                text=f"Произошла ошибка при получении данных от API: {str(e)}"
-            )
-
-        except (KeyError, TypeError, ValueError) as e:
-            logging.exception("Error processing API response data: %s", e)
-            self.bot.edit_message_text(
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                text=f"Ошибка обработки данных: {str(e)}"
-            )
+    def __gen_currency_markup(self):
+        """Генерирует inline-клавиатуру для выбора валюты."""
+        markup = types.InlineKeyboardMarkup(row_width=3)
+        buttons = [
+            types.InlineKeyboardButton(
+                code, callback_data=self.currency_keyboard_factory.new(
+                    code=code)
+            ) for code in self.CURRENCIES
+        ]
+        markup.add(*buttons)
+        return markup
