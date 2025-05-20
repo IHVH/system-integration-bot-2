@@ -7,7 +7,7 @@ import requests
 import telebot
 from telebot import types
 
-from src.bot_func_abc import AtomicBotFunctionABC
+from bot_func_abc import AtomicBotFunctionABC
 
 
 class WeatherFunction(AtomicBotFunctionABC):
