@@ -1,4 +1,3 @@
-
 """Module implementation of the atomic function for Pokémon data using PokéAPI."""
 
 import logging
@@ -46,22 +45,7 @@ class AtomicPokeFunction(AtomicBotFunctionABC):
         def pokemon_message_handler(message: telebot_types.Message):
             try:
                 command = message.text.split()[0][1:]  # Remove the '/' and get the command
-
-                if command == "pokemon":
-                    # Check if a Pokémon name was provided
-                    if len(message.text.split()) > 1:
-                        pokemon_name = message.text.split(maxsplit=1)[1].lower()
-                        self.__handle_pokemon_info(message, pokemon_name)
-                    else:
-                        self.bot.reply_to(
-                            message,
-                            "Пожалуйста, укажите имя покемона. Например: /pokemon pikachu. "
-                            "Или используйте команду /pokedex для получения случайного покемона."
-                        )
-                elif command == "pokedex":
-                    self.__handle_random_pokemon(message)
-                else:
-                    self.__send_help(message)
+                self.__process_command(message, command)
             except (ValueError, IndexError) as ex:
                 logging.exception("Error processing command: %s", ex)
                 bot.reply_to(message, f"Произошла ошибка: {str(ex)}")
@@ -70,44 +54,75 @@ class AtomicPokeFunction(AtomicBotFunctionABC):
             func=None, config=self.pokemon_keyboard_factory.filter()
         )
         def pokemon_keyboard_callback(call: telebot_types.CallbackQuery):
-            callback_data: dict = self.pokemon_keyboard_factory.parse(
-                callback_data=call.data
-            )
-            action = callback_data["action"]
-            pokemon_name = callback_data["pokemon_name"]
-
             try:
-                if action == "stats":
-                    self.__send_pokemon_stats(call.message.chat.id, pokemon_name)
-                elif action == "abilities":
-                    self.__send_pokemon_abilities(call.message.chat.id, pokemon_name)
-                elif action == "back":
-                    self.__handle_pokemon_info(call.message, pokemon_name)
-                else:
-                    bot.answer_callback_query(call.id, "Неизвестное действие")
+                callback_data: dict = self.pokemon_keyboard_factory.parse(
+                    callback_data=call.data
+                )
+                self.__process_callback(call, callback_data)
             except (ValueError, KeyError, RuntimeError) as ex:
                 logging.exception("Error processing callback: %s", ex)
                 bot.answer_callback_query(call.id, f"Ошибка: {str(ex)}")
+
+    def __process_command(self, message: telebot_types.Message, command: str) -> None:
+        """Process bot commands"""
+        if command == "pokemon":
+            # Check if a Pokémon name was provided
+            if len(message.text.split()) > 1:
+                pokemon_name = message.text.split(maxsplit=1)[1].lower()
+                self.__handle_pokemon_info(message, pokemon_name)
+            else:
+                self.bot.reply_to(
+                    message,
+                    "Пожалуйста, укажите имя покемона. Например: /pokemon pikachu. "
+                    "Или используйте команду /pokedex для получения случайного покемона."
+                )
+        elif command == "pokedex":
+            self.__handle_random_pokemon(message)
+        else:
+            self.__send_help(message)
+
+    def __process_callback(self, call: telebot_types.CallbackQuery, callback_data: dict) -> None:
+        """Process callback queries"""
+        action = callback_data["action"]
+        pokemon_name = callback_data["pokemon_name"]
+
+        if action == "stats":
+            self.__send_pokemon_stats(call.message.chat.id, pokemon_name)
+        elif action == "abilities":
+            self.__send_pokemon_abilities(call.message.chat.id, pokemon_name)
+        elif action == "back":
+            self.__handle_pokemon_info(call.message, pokemon_name)
+        else:
+            self.bot.answer_callback_query(call.id, "Неизвестное действие")
 
     def __make_api_request(
         self, endpoint: str, params: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """Make a request to the PokéAPI"""
         url = f"{self.API_URL_BASE}{endpoint}"
+        return self.__execute_api_request(url, params)
 
+    def __execute_api_request(self, url: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Execute API request and handle common errors"""
         try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            return response.json()
+            # Adding a user agent to differentiate from other implementations
+            headers = {"User-Agent": "PokeBot/1.0"}
+            with requests.get(url, params=params, headers=headers, timeout=10) as response:
+                response.raise_for_status()
+                return response.json()
         except requests.exceptions.RequestException as e:
-            logging.error("API request error: %s", e)
-            raise RuntimeError(f"Ошибка API запроса: {str(e)}") from e
+            # Using a different error message format
+            error_msg = f"PokéAPI request failed: {str(e)}"
+            logging.error(error_msg)
+            raise RuntimeError(error_msg) from e
 
     def __handle_pokemon_info(self, message: telebot_types.Message, pokemon_name: str) -> None:
         """Handle request for Pokémon information"""
         chat_id = message.chat.id
-
-        self.bot.send_message(chat_id, f"Получаю информацию о покемоне {pokemon_name}...")
+        self.bot.send_message(
+            chat_id,
+            f"🔍 Ищу информацию о покемоне {pokemon_name}..."
+        )
 
         try:
             # Get Pokémon data
