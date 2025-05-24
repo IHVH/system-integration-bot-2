@@ -25,9 +25,11 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
 
+[MOTIVATION_API_KEY](https://www.api-ninjas.com/api/quotes)
+
 [EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
 
-[NASA_API_KEY](https://api.nasa.gov/).
+[NASA_API_KEY](https://api.nasa.gov/)
 
 ```
 LOGLEVEL=ERROR
@@ -39,10 +41,11 @@ EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
 COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
+MOTIVATION_API_KEY= <your_free_motivation_api_key>
 EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
-```
 
+```
 
 ## Adding telegram bot functions.
 
