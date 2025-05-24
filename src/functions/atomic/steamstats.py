@@ -6,7 +6,7 @@ import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
-from src.bot_func_abc import AtomicBotFunctionABC
+from bot_func_abc import AtomicBotFunctionABC
 
 
 class SteamBotFunction(AtomicBotFunctionABC):
