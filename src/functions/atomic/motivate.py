@@ -8,6 +8,7 @@ import telebot
 from telebot import types
 from bot_func_abc import AtomicBotFunctionABC
 
+
 class AtomicMotivateFunction(AtomicBotFunctionABC):
     """Atomic-функция для отправки мотивационной цитаты по команде /motivate."""
     commands: List[str] = ["motivate"]
@@ -49,7 +50,8 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
         """Возвращает API-ключ для сервиса мотивационных цитат."""
         api_key = os.environ.get("MOTIVATION_API_KEY")
         if not api_key:
-            logging.warning("MOTIVATION_API_KEY not found in environment variables")
+            logging.warning(
+                "MOTIVATION_API_KEY not found in environment variables")
             raise RuntimeError("API ключ для мотивационных цитат не найден.")
         return api_key
 
