@@ -41,7 +41,7 @@ EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
 COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
-MOTIVATION_API_KEY= <your_motivation_currency_api_key>
+MOTIVATION_API_KEY= 
 EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
 
