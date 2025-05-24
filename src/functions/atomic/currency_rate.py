@@ -24,7 +24,7 @@ class AtomicCurrencyRateFunction(AtomicBotFunctionABC):
 
     bot: telebot.TeleBot
     currency_keyboard_factory: CallbackData
-    API_URL = "https://api.currencyfreaks.com/v2.0/rates/latest"
+    API_URL = "https://api.freecurrencyapi.com/v1/latest"
     CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CNY", "CHF", "RUB"]
 
     def set_handlers(self, bot: telebot.TeleBot):

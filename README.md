@@ -25,7 +25,7 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
 
-[CURRENCY_API_KEY](https://billing.currencyfreaks.com/)
+[FREE_CURRENCY_API_KEY](https://app.freecurrencyapi.com/)
 
 [NASA_API_KEY](https://api.nasa.gov/)
 
