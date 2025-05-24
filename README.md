@@ -27,6 +27,8 @@ Links to information about tokens
 
 [FREE_CURRENCY_API_KEY](https://app.freecurrencyapi.com/)
 
+[EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
+
 [NASA_API_KEY](https://api.nasa.gov/)
 
 ```
@@ -40,6 +42,7 @@ IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
 COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
 FREE_CURRENCY_API_KEY= <your_free_currency_api_key>
+EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
 
 ```
