@@ -33,14 +33,13 @@ class WaifuFunction(AtomicBotFunctionABC):
     def set_handlers(self, bot: TeleBot):
         """Устанавливает обработчики команд."""
         self.bot = bot
-        self.keyboard_factory = CallbackData("waifu", prefix=self.commands[0])
 
-        @bot.message_handler(commands=["waifu"])
+        @bot.message_handler(commands=["prefix=self.commands[0]"])
         def waifu_handler(message: types.Message):
             """Обработчик команды /waifu."""
             self.__process_waifu_request(message)
 
-        @bot.message_handler(commands=["waifu_tags"])
+        @bot.message_handler(commands=["prefix=self.commands[1]"])
         def waifu_tags_handler(message: types.Message):
             """Обработчик команды /waifu_tags."""
             try:
@@ -108,15 +107,11 @@ class WaifuFunction(AtomicBotFunctionABC):
     def __fetch_waifu_images(self, tag: str, amount: int) -> List[dict]:
         """Получает изображения по тегу."""
         url = "https://api.waifu.im/search/"
-        params = {
-            "included_tags": tag,
-            "many": "true",
-            "height": f">={100*amount}"
-        }
+        params = {"included_tags": tag, "many": "true", "limit": amount}
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         data = response.json()
-        return data.get("images", [])[:amount]
+        return data.get("images", [])
 
     def __get_available_tags(self) -> List[str]:
         """Получает список доступных тегов с API."""
