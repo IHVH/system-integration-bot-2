@@ -34,12 +34,12 @@ class WaifuFunction(AtomicBotFunctionABC):
         """Устанавливает обработчики команд."""
         self.bot = bot
 
-        @bot.message_handler(commands=["prefix=self.commands[0]"])
+        @bot.message_handler(commands=[self.commands[0]])
         def waifu_handler(message: types.Message):
             """Обработчик команды /waifu."""
             self.__process_waifu_request(message)
 
-        @bot.message_handler(commands=["prefix=self.commands[1]"])
+        @bot.message_handler(commands=[self.commands[1]])
         def waifu_tags_handler(message: types.Message):
             """Обработчик команды /waifu_tags."""
             try:
@@ -118,4 +118,4 @@ class WaifuFunction(AtomicBotFunctionABC):
         response = requests.get("https://api.waifu.im/tags", timeout=10)
         response.raise_for_status()
         data = response.json()
-        return [tag["name"] for tag in data.get("versatile", [])]
+        return data.get("versatile", [])
