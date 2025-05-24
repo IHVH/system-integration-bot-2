@@ -18,7 +18,7 @@ class WaifuFunction(AtomicBotFunctionABC):
     """
 
     commands: List[str] = ["waifu", "waifu_tags"]
-    authors: List[str] = ["Герлеман Андрей Антонович, Github: fckngraccoon"]
+    authors: List[str] = ["fckngraccoon"]
     about: str = "Случайные waifu"
     description: str = (
         "Используйте /waifu <тег> <количество (по желанию)>.\n"
@@ -108,11 +108,15 @@ class WaifuFunction(AtomicBotFunctionABC):
     def __fetch_waifu_images(self, tag: str, amount: int) -> List[dict]:
         """Получает изображения по тегу."""
         url = "https://api.waifu.im/search/"
-        params = {"included_tags": tag, "many": "true", "per_page": amount}
+        params = {
+            "included_tags": tag,
+            "many": "true",
+            "height": f">={100*amount}"
+        }
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         data = response.json()
-        return data.get("images", [])
+        return data.get("images", [])[:amount]
 
     def __get_available_tags(self) -> List[str]:
         """Получает список доступных тегов с API."""
