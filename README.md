@@ -39,6 +39,8 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
 
+[EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
+
 ## Adding telegram bot functions.
 
 Dear students, when implementing your functions, adhere to the following recommendations.
