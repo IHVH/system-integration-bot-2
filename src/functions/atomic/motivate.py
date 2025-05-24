@@ -14,7 +14,13 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
     commands: List[str] = ["motivate"]
     authors: List[str] = ["Jorik887"]
     about: str = "Мотивационные цитаты"
-    description: str = "Отправляет случайную мотивационную цитату.\nПример: /motivate"
+    description: str = """Отправляет случайную мотивационную цитату через API Ninjas.
+    Цитаты включают в себя текст и автора. Используется для мотивации и вдохновения.
+
+    Пример использования:
+    /motivate - получить случайную мотивационную цитату
+
+    API: https://api.api-ninjas.com/v1/quotes"""
     state: bool = True
 
     bot: telebot.TeleBot
