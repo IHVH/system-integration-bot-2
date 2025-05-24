@@ -13,7 +13,7 @@ class AtomicCurrencyRateFunction(AtomicBotFunctionABC):
     """Implementation of atomic function for currency rates."""
 
     commands: List[str] = ["currency"]
-    authors: List[str] = ["Jorik"]
+    authors: List[str] = ["Jorik887"]
     about: str = "Узнать курс валют"
     description: str = (
         "Функция выводит список валют и позволяет узнать их курс к RUB.\n"
