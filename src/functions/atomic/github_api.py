@@ -16,7 +16,7 @@ class GithubAPICommits(AtomicBotFunctionABC):
     about: str = "Информация о коммитах"
     description: str = """Функция предназначена для получения информации о
       коммитах в репозитори https://github.com/IHVH/system-integration-bot-2 
-      для вызова функции можно использовать команды `/git` `/github`  
+      для вызова функции можно использовать команды `/git 2` `/github 3`  
       """
     state: bool = True
 
@@ -29,11 +29,23 @@ class GithubAPICommits(AtomicBotFunctionABC):
 
         @bot.message_handler(commands=self.commands)
         def message_hendler_for_github_api(message: types.Message):
-            messeges = self.get_data(count=10)
+            messeges = []
+            parts = message.text.split(" ")
+            if len(parts) == 2:
+                cnt_str = parts[1]
+                if cnt_str.isdigit():
+                    messeges = self.get_data(int(cnt_str))
+                else:
+                    msg = "Укажите количество коммитов! `/git 5`"
+                    bot.send_message(text=msg, chat_id=message.chat.id)
+
+            else:
+                messeges = self.get_data()
+
             for commit in messeges:
                 bot.send_message(text=commit, chat_id=message.chat.id)
 
-    def get_data(self, count: int = 2):
+    def get_data(self, count: int = 5):
         """Get data from githab """
 
         result = []
@@ -48,7 +60,12 @@ class GithubAPICommits(AtomicBotFunctionABC):
 
         for commit in list_commits:
 
-            msg = f"{commit['commit']['message']}"
-            result.append(msg)
+            date = commit['commit']['author']['date']
+            author = commit['commit']['author']['name']
+            commit_url = commit['html_url']
+            msg = commit['commit']['message']
+
+            message = f"author - {author} \n{msg} \n{date} \n{commit_url}"
+            result.append(message)
 
         return result

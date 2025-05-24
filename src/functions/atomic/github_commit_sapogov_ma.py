@@ -9,11 +9,11 @@ from bot_func_abc import AtomicBotFunctionABC
 
 class CountryCodesBot(AtomicBotFunctionABC):
     """Класс для получения ISO-кодов стран и их административных единиц."""
-    commands: List[str] = ["Countries"]  # Keep only "Countries"
+    commands: List[str] = ["countries"]  # Keep only "Countries"
     authors: List[str] = ["TestStudentMichael"]
     about: str = "ISO-коды и адм.ед стран"
     description: str = (
-        "`/Countries` - функция выводит список доступных ISO-кодов стран, "
+        "`/countries` - функция выводит список доступных ISO-кодов стран, "
         "а после принимает код от пользователя и выводит в ответ административные единицы."
     )
     state: bool = True

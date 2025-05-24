@@ -2,7 +2,7 @@
 
 from start_app import StartApp
 
-_START_COMANDS = ["start", "help", "info", "s", "h", "i"]
+_START_COMANDS = ["start", "s", "info", "i"]
 
 if __name__ == '__main__':
     app = StartApp(_START_COMANDS)

@@ -5,11 +5,12 @@ import sys
 import os
 from typing import List
 import telebot
-from telebot import types
 from telebot.callback_data import CallbackData
 from load_atomic import load_atomic_functions
 from bot_middleware import Middleware
 from bot_callback_filter import BotCallbackCustomFilter
+from bot_func_abc import AtomicBotFunctionABC
+from functions.defoult_bot_function import DefoultBotFunction
 
 class StartApp():
     """Configuring and running the application"""
@@ -25,7 +26,7 @@ class StartApp():
         self.bot = self.__get_bot()
         self.atom_functions_list = load_atomic_functions()
         self.__decorate_atomic_functions()
-        self.__decorate_defoult_functions(start_comannds)
+        self.__decorate_defoult_functions(start_comannds, self.atom_functions_list)
         self.__add_middleware()
         self.__add_filter()
 
@@ -86,55 +87,10 @@ class StartApp():
                 funct.state = False
                 self.logger.warning("%s - start EXCEPTION!", funct)
 
-    def __decorate_defoult_functions(self, start_comannds: List[str]):
+    def __decorate_defoult_functions(self, start_comannds: List[str],
+    functions_list: List[AtomicBotFunctionABC]):
         """Decorate the function for handling startup commands
         and the function for handling uncaught messages"""
 
-        self.keyboard_factory = CallbackData('app_key_button', prefix=start_comannds[0])
-        description_callback_data = self.keyboard_factory.new(app_key_button="description")
-
-        @self.bot.message_handler(commands=start_comannds)
-        def start_message(message):
-            txt = "Доступные функции: \n"
-            for funct in self.atom_functions_list:
-                txt += f"/{funct.commands[0]} - {funct.about} \n"
-
-            reply_markup=self.__gen_markup_button(description_callback_data)
-            self.bot.send_message(text=txt, chat_id=message.chat.id, reply_markup=reply_markup)
-
-        @self.bot.callback_query_handler(func=None, config=self.keyboard_factory.filter())
-        def example_keyboard_callback(call: types.CallbackQuery):
-            callback_data: dict = self.keyboard_factory.parse(callback_data=call.data)
-            button = callback_data['app_key_button']
-
-            match (button):
-                case ("description"):
-                    self.__send_description_messages(call)
-                case _:
-                    self.bot.answer_callback_query(call.id, call.data)
-
-        @self.bot.message_handler(func=lambda message: True)
-        def text_messages(message):
-            self.bot.reply_to(message, "Text = " + message.text)
-            cmd = "\n /".join(start_comannds)
-            msg = f"To begin, enter one of the commands \n /{cmd}"
-            self.bot.send_message(text=msg, chat_id=message.chat.id)
-
-    def __gen_markup_button(self, callback_data):
-        markup = types.InlineKeyboardMarkup()
-        markup.row_width = 1
-        markup.add(
-            types.InlineKeyboardButton("Description", callback_data=callback_data)
-        )
-        return markup
-
-    def __send_description_messages(self, call: types.CallbackQuery):
-        for funct in self.atom_functions_list:
-            authors = "\n "
-            for author in funct.authors:
-                authors += "https://github.com/" + author
-
-            cmd = "\n /".join(funct.commands)
-            msg = f"{funct.about} \n /{cmd} \n{funct.description} \n"
-            msg += f"Авторы: {authors}"
-            self.bot.send_message(text=msg, chat_id=call.message.chat.id)
+        defouit_function = DefoultBotFunction(start_comannds, functions_list)
+        defouit_function.set_handlers(self.bot)
