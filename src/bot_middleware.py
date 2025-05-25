@@ -11,9 +11,11 @@ class Middleware(BaseMiddleware):
     """Pre-process and post-process processing of incoming messages"""
 
     def pre_process(self, message, data):
+        """BaseMiddleware method"""
         raise NotImplementedError
 
     def post_process(self, message, data, exception):
+        """BaseMiddleware method"""
         raise NotImplementedError
 
     def __init__(self, logger: logging.Logger, bot: telebot.TeleBot):
