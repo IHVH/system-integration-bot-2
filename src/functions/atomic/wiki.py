@@ -12,7 +12,7 @@ class WikiBotFunction(AtomicBotFunctionABC):
     """Функция бота для получения информации из Википедии на основе запросов пользователей."""
 
     commands: List[str] = ["wiki"]
-    authors: List[str] = ["KolpakovDanila(essanedev)"]
+    authors: List[str] = ["essanedev"]
     about: str = "Поиск информации в Wikipedia"
     description: str = (
         "Функция для получения информации из Wikipedia по запросу. "
