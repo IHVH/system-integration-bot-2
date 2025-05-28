@@ -8,6 +8,7 @@ from telebot.types import Message
 from bot_func_abc import AtomicBotFunctionABC
 
 class StockRateFunction(AtomicBotFunctionABC):
+    """Класс для получения и отображения курсов топ-5 ценных бумаг с использованием Finnhub API."""
     commands = ["stockrate"]
     authors = ["Garik205"]
     about = "Вывод курсов топ-5 ценных бумаг"
@@ -15,13 +16,14 @@ class StockRateFunction(AtomicBotFunctionABC):
     state = True
 
     def set_handlers(self, bot):
-
+        """Реализация функции"""
         @bot.message_handler(commands=self.commands)
         def handle_stockrate(message: Message):
             try:
                 api_key = os.getenv("FINNHUB_API_KEY")
                 if not api_key:
-                    bot.send_message(message.chat.id, "API ключ не найден. Пожалуйста, настройте переменную среды FINNHUB_API_KEY.")
+                    bot.send_message(message.chat.id, "API ключ не " \
+                    "найден. Пожалуйста, настройте переменную среды FINNHUB_API_KEY.")
                     return
                 symbols = ['AAPL', 'GOOGL', 'AMZN', 'MSFT', 'TSLA']
                 stock_info = {
@@ -47,4 +49,3 @@ class StockRateFunction(AtomicBotFunctionABC):
 
             except (RequestException, json.JSONDecodeError) as e:
                 bot.send_message(message.chat.id, f"Произошла ошибка: {e}")
-                
