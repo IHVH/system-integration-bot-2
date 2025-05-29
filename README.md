@@ -25,13 +25,11 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://finnhub.io/docs/api).
 
-<<<<<<< HEAD
 [EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
 
-[NASA_API_KEY](https://api.nasa.gov/).
-=======
 [FINNHUB_API_KEY](https://finnhub.io/dashboard).
->>>>>>> 342c0d8 (Добавлена environment переменная и ссылки на регистрацию и получение токена.)
+
+[NASA_API_KEY](https://api.nasa.gov/).
 
 ```
 LOGLEVEL=ERROR
