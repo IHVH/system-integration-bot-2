@@ -19,6 +19,7 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
 
     Пример использования:
     /motivate - получить случайную мотивационную цитату
+    /motivate 3 - получить три разных цитаты
 
     API: https://api.api-ninjas.com/v1/quotes"""
     state: bool = True
@@ -35,19 +36,29 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
         def motivate_message_handler(message: types.Message):
             """Обрабатывает команду /motivate и отправляет цитату."""
             try:
-                quote = self.__get_random_quote()
-                if quote:
-                    text = (
-                        f"\u2757 *{quote['quote']}*\n_— {quote['author']}_"
-                    )
-                    bot.send_message(
-                        message.chat.id, text, parse_mode="Markdown"
-                    )
-                else:
-                    bot.send_message(
-                        message.chat.id,
-                        "Не удалось получить цитату. Попробуйте позже."
-                    )
+                # Парсинг аргументов команды
+                parts = message.text.split()
+                repeat_count = 1
+                if len(parts) > 1:
+                    try:
+                        repeat_count = max(int(parts[1]), 1)
+                    except ValueError:
+                        pass  # Оставляем 1 при некорректном вводе
+
+                for _ in range(repeat_count):
+                    quote = self.__get_random_quote()
+                    if quote:
+                        text = (
+                            f"\u2757 *{quote['quote']}*\n_— {quote['author']}_"
+                        )
+                        bot.send_message(
+                            message.chat.id, text, parse_mode="Markdown"
+                        )
+                    else:
+                        bot.send_message(
+                            message.chat.id,
+                            "Не удалось получить цитату. Попробуйте позже."
+                        )
             except (RuntimeError, requests.RequestException) as ex:
                 logging.exception("Error in /motivate: %s", ex)
                 bot.send_message(message.chat.id, f"Ошибка: {str(ex)}")
