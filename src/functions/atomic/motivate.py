@@ -19,7 +19,7 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
 
     Пример использования:
     /motivate - получить случайную мотивационную цитату
-    /motivate 3 - получить три разных цитаты
+    /motivate N - получить N случайных мотивационных цитат (где N - число от 1 до 5)
 
     API: https://api.api-ninjas.com/v1/quotes"""
     state: bool = True
@@ -27,6 +27,7 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
     bot: telebot.TeleBot
 
     API_URL = "https://api.api-ninjas.com/v1/quotes"
+    MAX_QUOTES = 5
 
     def set_handlers(self, bot: telebot.TeleBot):
         """Регистрирует обработчик команды /motivate."""
@@ -34,18 +35,24 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
 
         @bot.message_handler(commands=self.commands)
         def motivate_message_handler(message: types.Message):
-            """Обрабатывает команду /motivate и отправляет цитату."""
+            """Обрабатывает команду /motivate и отправляет цитаты."""
             try:
-                # Парсинг аргументов команды
-                parts = message.text.split()
-                repeat_count = 1
-                if len(parts) > 1:
-                    try:
-                        repeat_count = max(int(parts[1]), 1)
-                    except ValueError:
-                        pass  # Оставляем 1 при некорректном вводе
+                # Получаем количество цитат из аргументов команды
+                args = message.text.split()
+                num_quotes = 1
 
-                for _ in range(repeat_count):
+                if len(args) > 1:
+                    try:
+                        num_quotes = int(args[1])
+                        if num_quotes < 1:
+                            num_quotes = 1
+                        elif num_quotes > self.MAX_QUOTES:
+                            num_quotes = self.MAX_QUOTES
+                    except ValueError:
+                        num_quotes = 1
+
+                # Получаем и отправляем цитаты
+                for _ in range(num_quotes):
                     quote = self.__get_random_quote()
                     if quote:
                         text = (
@@ -59,6 +66,7 @@ class AtomicMotivateFunction(AtomicBotFunctionABC):
                             message.chat.id,
                             "Не удалось получить цитату. Попробуйте позже."
                         )
+                        break
             except (RuntimeError, requests.RequestException) as ex:
                 logging.exception("Error in /motivate: %s", ex)
                 bot.send_message(message.chat.id, f"Ошибка: {str(ex)}")
