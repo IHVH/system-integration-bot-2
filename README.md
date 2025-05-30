@@ -25,6 +25,8 @@ Links to information about tokens
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
 
+[EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
+
 [NASA_API_KEY](https://api.nasa.gov/).
 
 ```
@@ -37,8 +39,10 @@ EXAMPLETOKEN=1234567890
 IPSTACK_API_KEY=
 OPENWEATHER_API_KEY=
 COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
+EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
 ```
+
 
 ## Adding telegram bot functions.
 
