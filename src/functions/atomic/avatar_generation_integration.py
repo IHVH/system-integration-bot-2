@@ -32,6 +32,7 @@ class AvatarGenBotFunction(AtomicBotFunctionABC):
         "`masha 000000 1`"
     )
     bot: telebot.TeleBot
+    state: bool = True
 
     def set_handlers(self, bot: telebot.TeleBot):
         """
@@ -62,14 +63,23 @@ class AvatarGenBotFunction(AtomicBotFunctionABC):
 
             name, color, length_str = args
             length = int(length_str)
-            trimmed_name = name[:length]
 
-            url = f"https://avatar.oxro.io/avatar.svg?name={trimmed_name}&background={color}"
+            parts = name.strip().split()
+            if len(parts) >= 2:
+                formatted_name = f"{parts[0]}+{parts[1]}"
+            else:
+                formatted_name = name[:length]
+
+            url = (
+                f"https://avatar.oxro.io/avatar.svg?"
+                f"name={formatted_name}&"
+                f"background={color}&"
+                f"color=000000"
+            )
 
             response = requests.get(url, timeout=5)
             if response.status_code != 200:
-                self.bot.send_message(message.chat.id, "Ошибка при получении"
-                                                       " изображения. Попробуйте позже.")
+                self.bot.send_message(message.chat.id, "Ошибка при получении изображения. Попробуйте позже.")
                 return
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".svg") as tmp_file:
@@ -82,5 +92,8 @@ class AvatarGenBotFunction(AtomicBotFunctionABC):
             os.remove(tmp_file_path)
 
         except requests.RequestException as error:
-            self.bot.send_message(message.chat.id, f"Произошла ошибка:"
-                                                   f" {error}", parse_mode="Markdown")
+            self.bot.send_message(
+                message.chat.id,
+                f"Произошла ошибка: {error}",
+                parse_mode="Markdown"
+            )
