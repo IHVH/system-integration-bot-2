@@ -1,168 +1,152 @@
-"""Telegram bot module for searching movies using the OMDB API."""
+"""Telegram bot module for searching movies using OMDb API."""
 
 import os
 import logging
-import html
-from typing import Dict, List, Optional, Any
+from typing import List, Dict, Any, Optional
 import requests
 import telebot
 from telebot import types
+from bot_func_abc import AtomicBotFunctionABC
 
-
-class AtomicBotFunctionABC:
-    """Abstract base class for bot functions with required interface."""
-    def get_commands(self) -> List[str]:
-        """Return list of bot commands."""
-        raise NotImplementedError
-
-    def get_authors(self) -> List[str]:
-        """Return list of authors."""
-        raise NotImplementedError
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class MovieSearchBotFunction(AtomicBotFunctionABC):
-    """Telegram bot function for searching movies using OMDB API."""
+    """Atomic Telegram bot function for searching movies using OMDb API."""
 
-    def __init__(self) -> None:
-        """Initialize movie search bot function."""
-        self._commands = ["movie", "searchmovie"]
-        self._authors = ["IHVH"]
-        self._about = "Search movies by title"
-        self._description = (
-            "Search movies by title using OMDB API.\n"
-            "Usage: /movie <movie title>\n"
-            "Example: /movie Inception\n"
-            "Returns a list of movies. Click a movie for details."
-        )
-        self._state = True
-        self._omdb_url = "http://www.omdbapi.com/"
-        logging.basicConfig(level=logging.INFO)
+    commands: List[str] = ["movie", "searchmovie"]
+    authors: List[str] = ["IHVH"]
+    about: str = "Поиск фильмов по названию через OMDb API"
+    description: str = (
+        "Команда для поиска фильмов по названию с использованием OMDb API.\n"
+        "Пример: /movie Interstellar\n"
+        "Показывает список найденных фильмов, можно нажать на один для подробностей."
+    )
+    state: bool = True
 
-    def get_commands(self) -> List[str]:
-        """Return list of bot commands."""
-        return self._commands
+    def __init__(self):
+        self.bot = None
+        self.omdb_url = "http://www.omdbapi.com/"
 
-    def get_authors(self) -> List[str]:
-        """Return list of authors."""
-        return self._authors
+    def set_handlers(self, bot: telebot.TeleBot):
+        """Устанавливает обработчики команд и inline-кнопок."""
+        self.bot = bot
 
-    def set_handlers(self, bot: telebot.TeleBot) -> None:
-        """Register bot handlers for movie search and details retrieval."""
-        @bot.message_handler(commands=self._commands)
-        def movie_search_handler(message: types.Message) -> None:
-            self._process_movie_search(bot, message)
+        @bot.message_handler(commands=self.commands)
+        def movie_search_handler(message: types.Message):
+            """Обработчик команды поиска фильма."""
+            try:
+                args = message.text.split(maxsplit=1)
+                if len(args) < 2:
+                    bot.reply_to(message, "Укажите название фильма. Пример: /movie Interstellar")
+                    return
 
-        @bot.callback_query_handler(
-            func=lambda query: query.data.startswith('details_')
-        )
-        def movie_details_callback(callback_query: types.CallbackQuery) -> None:
-            self._process_movie_details(bot, callback_query)
+                title = args[1].strip()
+                if len(title) < 2:
+                    bot.reply_to(message, "Введите хотя бы 2 символа.")
+                    return
 
-    def _process_movie_search(
-        self,
-        bot: telebot.TeleBot,
-        message: types.Message
-    ) -> None:
-        """Process movie search request."""
-        args = message.text.split(maxsplit=1)
-        if len(args) < 2:
-            bot.reply_to(message, "Provide a movie title. Example: /movie Inception")
-            return
+                movies = self._fetch_movies(title)
+                if not movies:
+                    bot.reply_to(message, "Фильмы не найдены.")
+                    return
 
-        movie_title = args[1].strip()
-        if len(movie_title) < 2:
-            bot.reply_to(message, "Please enter at least 2 characters for the title.")
-            return
+                markup = self._generate_movie_buttons(movies)
+                bot.send_message(message.chat.id, "Найдено:", reply_markup=markup)
+            except (ValueError, requests.exceptions.RequestException) as e:
+                logger.error("Ошибка в обработчике поиска: %s", str(e))
+                bot.reply_to(message, "Произошла ошибка при поиске фильмов")
 
-        movies = self._fetch_movies(movie_title)
-        if not movies:
-            bot.reply_to(message, "No movies found. Try another title.")
-            return
+        @bot.callback_query_handler(func=lambda call: call.data.startswith('movie_detail:'))
+        def movie_details_callback(call: types.CallbackQuery):
+            """Обработчик нажатия на кнопку с фильмом."""
+            try:
+                imdb_id = call.data.split(':')[1]
+                movie = self._fetch_movie_details(imdb_id)
+                
+                if not movie:
+                    bot.answer_callback_query(call.id, "Ошибка при получении данных о фильме")
+                    return
 
-        markup = self._generate_movie_buttons(movies)
-        bot.send_message(message.chat.id, "Found movies:", reply_markup=markup)
+                response = self._format_movie_details(movie)
+                
+                if movie.get('Poster') and movie['Poster'] != 'N/A':
+                    bot.send_photo(call.message.chat.id, movie['Poster'], 
+                                 caption=response, parse_mode='HTML')
+                else:
+                    bot.send_message(call.message.chat.id, response, parse_mode='HTML')
+                                    
+                bot.answer_callback_query(call.id)
+            except (ValueError, requests.exceptions.RequestException) as e:
+                logger.error("Ошибка в callback: %s", str(e))
+                bot.answer_callback_query(call.id, "Произошла ошибка")
 
-    def _process_movie_details(
-        self,
-        bot: telebot.TeleBot,
-        callback_query: types.CallbackQuery
-    ) -> None:
-        """Process movie details request."""
-        movie_id = callback_query.data.split('_', 1)[1]
-        movie_details = self._fetch_movie_details(movie_id)
-        if not movie_details:
-            logging.warning(
-                "Failed to get movie details for callback: %s",
-                callback_query.data
-            )
-            bot.answer_callback_query(
-                callback_query.id,
-                "Failed to get details, please try again later."
-            )
-            return
-
-        response_text = self._format_movie_details(movie_details)
-        bot.answer_callback_query(callback_query.id)
-        bot.send_message(
-            callback_query.message.chat.id,
-            response_text,
-            parse_mode='HTML'
-        )
-
-    def _generate_movie_buttons(
-        self,
-        movies: List[Dict[str, str]]
-    ) -> types.InlineKeyboardMarkup:
-        """Generate inline keyboard buttons for movies list."""
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        for movie in movies[:10]:
-            if 'imdbID' not in movie:
-                continue
-            button_text = f"{movie['Title']} ({movie['Year']})"
-            callback_data = f"details_{movie['imdbID']}"
-            markup.add(
-                types.InlineKeyboardButton(button_text, callback_data=callback_data)
-            )
-        return markup
-
-    def _fetch_omdb_token(self) -> str:
-        """Fetch OMDB API token from environment."""
-        token = os.environ.get("OMDB_API_TOKEN")
-        if not token:
-            logging.error("OMDB_API_TOKEN is not set")
-            raise ValueError("OMDB API token is not configured")
-        return token
-
-    def _fetch_movies(self, title: str) -> List[Dict[str, str]]:
-        """Search for movies matching the title."""
-        return self._make_omdb_request({"s": title})
-
-    def _fetch_movie_details(self, movie_id: str) -> Optional[Dict[str, str]]:
-        """Fetch detailed movie information by IMDb ID."""
-        return self._make_omdb_request({"i": movie_id})
-
-    def _make_omdb_request(self, params: Dict[str, str]) -> Optional[Dict[str, Any]]:
-        """Make a request to OMDB API and handle errors."""
+    def _fetch_movies(self, title: str) -> Optional[List[Dict[str, Any]]]:
+        """Ищет фильмы по названию."""
         try:
-            params["apikey"] = self._fetch_omdb_token()
-            response = requests.get(self._omdb_url, params=params, timeout=5)
+            params = {
+                "apikey": self._get_omdb_token(),
+                "s": title,
+                "type": "movie"
+            }
+            response = requests.get(self.omdb_url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
-            return data if data.get('Response') == 'True' else None
-        except requests.RequestException as error:
-            logging.error("OMDB API request failed: %s", error, exc_info=True)
+            logger.debug("API Response for '%s': %s", title, data)
+            return data["Search"] if data.get("Response") == "True" else None
+        except requests.exceptions.RequestException as e:
+            logger.error("Ошибка при поиске фильмов: %s", str(e))
             return None
 
+    def _fetch_movie_details(self, imdb_id: str) -> Optional[Dict[str, Any]]:
+        """Получает подробности о фильме по IMDb ID."""
+        try:
+            params = {
+                "apikey": self._get_omdb_token(),
+                "i": imdb_id,
+                "plot": "full"
+            }
+            response = requests.get(self.omdb_url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            logger.debug("API Details for %s: %s", imdb_id, data)
+            return data if data.get("Response") == "True" else None
+        except requests.exceptions.RequestException as e:
+            logger.error("Ошибка при получении деталей фильма: %s", str(e))
+            return None
+
+    def _get_omdb_token(self) -> str:
+        """Получает токен OMDb из переменных окружения."""
+        token = os.getenv("OMDB_API_TOKEN")
+        if not token:
+            raise ValueError("OMDB_API_TOKEN не установлен в .env")
+        return token
+
+    def _generate_movie_buttons(self, movies: List[Dict[str, str]]) -> types.InlineKeyboardMarkup:
+        """Создаёт inline-кнопки для списка фильмов."""
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for movie in movies[:5]:
+            if 'imdbID' not in movie:
+                continue
+            btn_text = f"{movie['Title']} ({movie['Year']})"
+            callback_data = f"movie_detail:{movie['imdbID']}"
+            markup.add(types.InlineKeyboardButton(btn_text, callback_data=callback_data))
+        return markup
+
     def _format_movie_details(self, movie: Dict[str, str]) -> str:
-        """Format movie details into an HTML string."""
-        details = [
-            f"<b>{html.escape(movie.get('Title', 'N/A'))}</b> "
-            f"({html.escape(movie.get('Year', 'N/A'))})",
-            f"Genre: {html.escape(movie.get('Genre', 'N/A'))}",
-            f"Director: {html.escape(movie.get('Director', 'N/A'))}",
-            f"Actors: {html.escape(movie.get('Actors', 'N/A'))}",
-            f"Plot: {html.escape(movie.get('Plot', 'N/A'))}",
-            f"IMDb Rating: {html.escape(movie.get('imdbRating', 'N/A'))}",
-            f"Runtime: {html.escape(movie.get('Runtime', 'N/A'))}"
-        ]
-        return "\n".join(details)
+        """Форматирует подробности фильма в HTML-формат."""
+        return (
+            f"<b>{movie.get('Title', 'N/A')}</b> ({movie.get('Year', 'N/A')})\n\n"
+            f"<b>⭐ Рейтинг:</b> {movie.get('imdbRating', 'N/A')}/10\n"
+            f"<b>📅 Дата выхода:</b> {movie.get('Released', 'N/A')}\n"
+            f"<b>⏱ Длительность:</b> {movie.get('Runtime', 'N/A')}\n"
+            f"<b>🎭 Жанр:</b> {movie.get('Genre', 'N/A')}\n"
+            f"<b>👨‍💼 Режиссер:</b> {movie.get('Director', 'N/A')}\n"
+            f"<b>👥 Актёры:</b> {movie.get('Actors', 'N/A')}\n\n"
+            f"<b>📖 Сюжет:</b>\n{movie.get('Plot', 'Нет описания')}"
+        )
