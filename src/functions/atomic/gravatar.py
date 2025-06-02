@@ -1,6 +1,5 @@
 """Модуль для интеграции с API Grawatar и реализации функциональности вывода аватарок по почте."""
 import hashlib
-import os
 import logging
 from urllib.parse import urlencode
 from typing import List
@@ -53,28 +52,19 @@ class GravatarBotFunction(AtomicBotFunctionABC):
             if '@' not in email:
                 raise ValueError("Некорректный email адрес")
 
-            # Получение настроек из переменных окружения
-            default_avatar = os.getenv(
-                "GRAVATAR_DEFAULT",
-                "https://example.com/default.png"
-            )
-            avatar_size = int(os.getenv("GRAVATAR_SIZE", "80"))
-
             # Генерация хеша
-            email_hash = hashlib.sha256(
-                email.lower().encode('utf-8')
-            ).hexdigest()
+            email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
 
             # Параметры запроса
-            params = {'d': default_avatar, 's': avatar_size}
+            params = {'s': 200}  # Размер по умолчанию 200px
 
             # Добавляем стиль если он указан и валиден
-            valid_styles = [
+            valid_styles = {
                 'monsterid', 'identicon', 'wavatar', 'retro', 'robohash'
-            ]
+            }
             if avatar_style:
                 if avatar_style.lower() in valid_styles:
-                    params['f'] = avatar_style.lower()
+                    params['d'] = avatar_style.lower()
                 else:
                     raise ValueError(
                         f"Недопустимый стиль аватара. "
@@ -87,8 +77,7 @@ class GravatarBotFunction(AtomicBotFunctionABC):
             # Форматированный ответ
             response = (
                 f"\U0001F464 Gravatar для {email}:\n"
-                f"\U0001F4CE Размер: {avatar_size}px\n"
-                f"\U0001F4F0 Дефолтная аватарка: {default_avatar}\n"
+                f"\U0001F4CE Размер: {params['s']}px\n"
             )
 
             if avatar_style:
@@ -101,8 +90,8 @@ class GravatarBotFunction(AtomicBotFunctionABC):
 
         except ValueError as e:
             self.bot.send_message(message.chat.id, f"\u274C Ошибка: {str(e)}")
-        except requests.exceptions.RequestException as e:
-            logging.exception("Gravatar API request failed: %s", e)
+        except Exception as e:
+            logging.exception("Gravatar request failed: %s", e)
             self.bot.send_message(
                 message.chat.id,
                 "\u274C Произошла ошибка при генерации Gravatar"
