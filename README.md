@@ -29,8 +29,6 @@ Links to information about tokens
 
 [EXCHANGE_RATE_API_KEY](https://app.exchangerate-api.com/sign-up)
 
-[FINNHUB_API_KEY](https://finnhub.io/dashboard).
-
 [NASA_API_KEY](https://api.nasa.gov/).
 
 ```
