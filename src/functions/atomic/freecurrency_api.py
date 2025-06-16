@@ -10,28 +10,7 @@ from typing import List, Optional, Dict, Any, Tuple
 import requests
 import telebot
 from telebot import types
-
-try:
-    from bot_func_abc import AtomicBotFunctionABC
-except ImportError:
-    print("Ошибка импорта: bot_func_abc.py не найден. Проверьте путь импорта.")
-
-    class AtomicBotFunctionABC:
-        """Заглушка абстрактного класса, если bot_func_abc не найден."""
-
-        commands: List[str] = []
-        authors: List[str] = []
-        about: str = ""
-        description: str = ""
-        state: bool = True
-
-        def set_handlers(self):
-            """Заглушка метода set_handlers."""
-            return []
-
-        def get_handlers(self) -> List:
-            """Заглушка метода get_handlers."""
-            return []
+from bot_func_abc import AtomicBotFunctionABC
 
 
 class FreeCurrencyAPIClientError(Exception):
@@ -111,82 +90,124 @@ class FreeCurrencyAPIClient:
                     ) from http_error_exc
         except requests.exceptions.JSONDecodeError:
             pass
-        except Exception as json_e:
-            self.logger.warning(
-                "Не удалось распарсить ответ ошибки как JSON: %s", json_e
-            )
 
         raise FreeCurrencyAPIClientError(
             f"HTTP ошибка {status_code} от API."
         ) from http_error_exc
 
+    def _process_response_data(
+        self, data: Dict[str, Any], response: requests.Response
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Вспомогательная функция для обработки данных ответа API после парсинга JSON.
+        Проверяет наличие сообщений об ошибках API и ключа 'data'.
+
+        Args:
+            data: Словарь с данными, полученными после парсинга JSON ответа.
+            response: Оригинальный объект ответа requests (для контекста).
+
+        Returns:
+            Словарь, содержащий часть 'data' ответа API, если она присутствует
+            и нет явных сообщений об ошибке API.
+            Возвращает None, если ответ является словарем, но отсутствует
+            ожидаемый ключ 'data' и не присутствует явное сообщение об ошибке API
+            в ключе 'message'.
+        """
+        if isinstance(data, dict) and "message" in data:
+            api_error_message = data.get(
+                "message", "Неизвестное сообщение об ошибке API"
+            )
+            self.logger.error("API вернуло сообщение об ошибке: %s", api_error_message)
+            raise FreeCurrencyAPIClientError(
+                f"API вернуло ошибку: {api_error_message}"
+            ) from requests.exceptions.RequestException(
+                f"API message: {api_error_message}"
+            )
+
+        if isinstance(data, dict) and "data" in data:
+            return data["data"]
+        response_text_preview = response.text[:500] if response else "N/A"
+        self.logger.warning(
+            "Неожиданная структура ответа API. " + "Ожидали {'data': ...}, получили: %s",
+            response_text_preview,
+        )
+        return None
+
     def _make_request(
         self, endpoint: str, params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         """
-        Внутренняя вспомогательная функция для выполнения запросов к API
-        и обработки общих ошибок.
+        Внутренняя вспомогательная функция для выполнения запросов к API.
+        Выполняет запрос, обрабатывает сетевые ошибки, ошибки статуса HTTP
+        и ошибки парсинга JSON. Делегирует обработку структуры данных
+        методу _process_response_data.
 
         Args:
             endpoint: Эндпоинт API (например, "latest", "currencies").
             params: Словарь параметров запроса.
 
         Returns:
-            Словарь, содержащий часть 'data' ответа API.
-
-        Raises:
-            FreeCurrencyAPIClientError: Если запрос к API не удался,
-                                        вернул статус ошибки,
-                                        или вернул неожиданные данные.
+            Результат вызова _process_response_data (Dict[str, Any] или None).
         """
         url = self.BASE_URL + endpoint
         all_params = params.copy() if params else {}
         all_params["apikey"] = self.api_key
 
         response = None
+        data = None
+
         try:
-            self.logger.debug(
-                "Выполнение запроса к API %s с параметрами %s", url, all_params
-            )
+            log_message = "Выполнение запроса к API %s " + "с параметрами %s"
+            self.logger.debug(log_message, url, all_params)
+
             response = requests.get(url, params=all_params, timeout=10)
-
             response.raise_for_status()
-
             data = response.json()
-
-            if isinstance(data, dict) and "message" in data:
-                api_msg_exc = requests.exceptions.RequestException(
-                    f"Сообщение API: {data['message']}"
-                )
-                raise FreeCurrencyAPIClientError(
-                    f"API вернуло ошибку: {data['message']}"
-                ) from api_msg_exc
-
-            if isinstance(data, dict) and "data" in data:
-                return data["data"]
+            return self._process_response_data(data, response)
 
         except requests.exceptions.Timeout as e:
+            self.logger.error("Время ожидания запроса к API истекло: %s", e)
             raise FreeCurrencyAPIClientError(
                 "Время ожидания запроса к API истекло (10 секунд)."
             ) from e
 
         except requests.exceptions.ConnectionError as e:
+            self.logger.error("Ошибка соединения с API: %s", e)
             raise FreeCurrencyAPIClientError(f"Ошибка соединения с API: {e}") from e
 
         except requests.exceptions.HTTPError as e:
-            self._handle_api_specific_error(e.response, e.response.status_code)
+            status_code = e.response.status_code if e.response is not None else "N/A"
+            error_details = f"Статус: {status_code}"
+            if e.response is not None:
+                try:
+                    error_json = e.response.json()
+                    if isinstance(error_json, dict) and "message" in error_json:
+                        error_details += f", Сообщение API: {error_json['message']}"
+                    else:
+                        error_details += f", Ответ: {e.response.text[:200]}..."
+                except requests.exceptions.JSONDecodeError:
+                    error_details += f", Ответ (не JSON): {e.response.text[:200]}..."
 
-        except requests.exceptions.RequestException as e:
-            raise FreeCurrencyAPIClientError(f"HTTP запрос не удался: {e}") from e
-
-        except ValueError as e:
-            response_text = response.text[:500] if response else "N/A"
             self.logger.error(
-                "Не удалось распарсить JSON. Текст ответа был: %s", response_text
+                "HTTP ошибка при запросе к API: %s (%s)", e, error_details
+            )
+            raise FreeCurrencyAPIClientError(
+                f"HTTP ошибка при запросе к API: {e} ({error_details})"
+            ) from e
+
+        except requests.exceptions.JSONDecodeError as e:
+            response_text_preview = response.text[:500] if response else "N/A"
+            self.logger.error(
+                "Не удалось распарсить JSON. Превью текста ответа: %s",
+                response_text_preview,
             )
             raise FreeCurrencyAPIClientError(
                 f"Не удалось распарсить JSON ответ от API: {e}"
             ) from e
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error("Общая ошибка запроса requests: %s", e)
+            raise FreeCurrencyAPIClientError(f"HTTP запрос не удался: {e}") from e
 
         except Exception as e:
             self.logger.exception(
@@ -389,14 +410,6 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
             )
             self.bot.reply_to(message, f"Ошибка при получении курса: {e}")
 
-        except Exception as e:
-            self.logger.exception(
-                "Непредвиденная ошибка в _get_and_send_currency_rate для чата %d: %s",
-                chat_id,
-                e,
-            )
-            self.bot.reply_to(message, f"Произошла непредвиденная ошибка: {e}")
-
     def set_handlers(self, bot: telebot.TeleBot):
         """Устанавливает обработчики сообщений для команд /currencies и /rate."""
         self.bot = bot
@@ -452,13 +465,6 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
                     "Ошибка при получении валют для чата %d: %s", chat_id, e
                 )
                 self.bot.reply_to(message, f"Ошибка при получении списка валют: {e}")
-            except Exception as e:
-                self.logger.exception(
-                    "Непредвиденная ошибка в handle_currencies для чата %d: %s",
-                    chat_id,
-                    e,
-                )
-                self.bot.reply_to(message, f"Произошла непредвиденная ошибка: {e}")
 
         @bot.message_handler(commands=["rate"])
         def handle_rate_inner(message: types.Message):
