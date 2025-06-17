@@ -21,6 +21,8 @@ Links to information about tokens
 
 [IPSTACK_API_KEY](https://ipstack.com/)
 
+[FINNHUB_API_KEY](https://finnhub.io/). - To get a token for the stock price withdrawal function, register and create a key on the Finnhub platform
+
 [OPENWEATHER_API_KEY](https://openweathermap.org). - To receive a token for the weather function, register and create a key on the OpenWeatherMap platform.
 
 [COINMARKETCAP_API_KEY](https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide).
