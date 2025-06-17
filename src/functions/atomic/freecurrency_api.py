@@ -426,7 +426,7 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
             )
             self.api_client = None  # Устанавливаем None, если инициализация не удалась
 
-        @bot.message_handler(commands=["currencies"])
+        @bot.message_handler(commands=[self.commands[0]])
         def handle_currencies_inner(message: types.Message):
             """Обрабатывает команду /currencies."""
             if self.api_client is None:
@@ -466,7 +466,7 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
                 )
                 self.bot.reply_to(message, f"Ошибка при получении списка валют: {e}")
 
-        @bot.message_handler(commands=["rate"])
+        @bot.message_handler(commands=[self.commands[1]])
         def handle_rate_inner(message: types.Message):
             """Обрабатывает команду /rate."""
             if self.api_client is None:
