@@ -4,4 +4,3 @@ sqlalchemy
 sqlalchemy-utils
 pylint
 requests
-time
