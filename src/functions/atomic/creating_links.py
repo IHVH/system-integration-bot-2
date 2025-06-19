@@ -1,4 +1,5 @@
-"""Модуль создания коротких ссылок с возможностью собственного названия используя Free Url Shortener API"""
+"""Модуль создания коротких ссылок с возможностью 
+собственного названия используя Free Url Shortener API"""
 
 from typing import List
 import time
@@ -7,7 +8,7 @@ import requests
 from telebot import types
 from bot_func_abc import AtomicBotFunctionABC
 
-class AtomicExampleBotFunction(AtomicBotFunctionABC):
+class AtomicCreatingLinksFunction(AtomicBotFunctionABC):
     """Модуль создания ссылок"""
 
     commands: List[str] = ["createlink", "customlink"]
@@ -85,4 +86,3 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
                     bot.send_message(message.chat.id, 'Ошибка: превышено время ожидания.')
                     return
                 time.sleep(2)
-
