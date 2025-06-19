@@ -31,6 +31,8 @@ Links to information about tokens
 
 [NASA_API_KEY](https://api.nasa.gov/)
 
+[FREE_CURRENCY_API_KEY](https://freecurrencyapi.com/)
+
 ```
 LOGLEVEL=ERROR
 TBOT_LOGLEVEL=ERROR
@@ -44,6 +46,7 @@ COINMARKETCAP_API_KEY=<your_coin_market_cap_api_key>
 MOTIVATION_API_KEY= <your_free_motivation_api_key>
 EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
+FREE_CURRENCY_API_KEY=
 
 ```
 
