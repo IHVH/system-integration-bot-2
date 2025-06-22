@@ -1,0 +1,74 @@
+import os
+import logging
+from dotenv import load_dotenv
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
+from core_api import CoreAcUkAPI
+
+load_dotenv()
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
+core_api = CoreAcUkAPI(os.getenv("CORE_API_KEY"))
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🔍 Привет! Я бот для поиска научных публикаций.\n"
+        "Используй команду /search <запрос> для поиска.\n"
+        "Например: /search machine learning"
+    )
+
+async def search_papers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = " ".join(context.args)
+    if not query:
+        await update.message.reply_text("🚫 Укажите запрос. Пример: /search quantum computing")
+        return
+
+    try:
+        await update.message.reply_text("🔎 Ищу публикации...")
+        results = core_api.search_publications(query)
+        publications = results.get("results", [])
+
+        if not publications:
+            await update.message.reply_text("❌ Ничего не найдено. Попробуйте другой запрос.")
+            return
+
+        for pub in publications:
+            message = (
+                f"📄 <b>{pub.get('title', 'Без названия')}</b>\n"
+                f"👥 Авторы: {', '.join([a.get('name', '?') for a in pub.get('authors', [])])}\n"
+                f"📅 Год: {pub.get('yearPublished', 'N/A')}\n"
+                f"🔗 DOI: {pub.get('doi', 'N/A')}"
+            )
+
+            buttons = []
+            if pub.get("downloadUrl"):
+                buttons.append([InlineKeyboardButton("📥 Скачать PDF", url=pub["downloadUrl"])])
+
+            await update.message.reply_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+                parse_mode="HTML",
+            )
+
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Ошибка: {str(e)}")
+
+def main():
+    application = ApplicationBuilder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("search", search_papers))
+    application.add_handler(CommandHandler("help", start))
+
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
