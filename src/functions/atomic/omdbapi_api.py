@@ -1,3 +1,7 @@
+"""Модуль содержит реализацию команд /film и /movie
+для поиска фильмов через OMDb API в Telegram-боте."""
+
+
 import os
 import logging
 from typing import List, Optional, Dict
@@ -12,7 +16,6 @@ from bot_func_abc import AtomicBotFunctionABC
 
 class OMDbServiceError(Exception):
     """Исключение для ошибок при работе с OMDb API."""
-    pass
 
 
 class OMDbService:
@@ -21,7 +24,7 @@ class OMDbService:
     BASE_URL = "http://www.omdbapi.com/"
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.environ.get("OMDb_API_KEY")
+        self.api_key = api_key or os.environ.get("OMDB_API_KEY")
 
         if not self.api_key:
             raise ValueError("OMDb API key is required")
@@ -59,6 +62,8 @@ class OMDbService:
 
 
 class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
+    """Команды для поиска фильмов через OMDb API."""
+
     commands: List[str] = ["movie", "film"]
     authors: List[str] = ["BLazzeD"]
     about: str = "Поиск фильмов через OMDb"
@@ -93,6 +98,8 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
         self.logger.setLevel(logging.INFO)
 
     def set_handlers(self, bot: telebot.TeleBot):
+        """Регистрирует обработчики сообщений и callback-кнопок."""
+
         self.bot = bot
         self.cb_factory = CallbackData("action", "value", prefix=self.commands[0])
 
@@ -113,10 +120,10 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                     "🔍 _Enter movie title_",
                     parse_mode='MarkdownV2'
                 )
-                bot.register_next_step_handler(msg, self.__search_next_step)
+                bot.register_next_step_handler(msg, self._search_next_step)
                 return
 
-            self.__search_movie(message.chat.id, args[1])
+            self._search_movie(message.chat.id, args[1])
 
         @bot.callback_query_handler(func=None, config=self.cb_factory.filter())
         def callback_handler(call: types.CallbackQuery):
@@ -130,10 +137,10 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
             value = data["value"]
 
             if action == "details":
-                self.__send_movie_details(call.message.chat.id, value)
+                self._send_movie_details(call.message.chat.id, value)
 
             elif action == "page":
-                self.__render_page(
+                self._render_page(
                     call.message.chat.id,
                     int(value),
                     call.message.message_id
@@ -146,10 +153,10 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
             self.logger.error("Service init error: %s", e)
             self.movie_service = None
 
-    def __search_next_step(self, message: types.Message):
-        self.__search_movie(message.chat.id, message.text)
+    def _search_next_step(self, message: types.Message):
+        self._search_movie(message.chat.id, message.text)
 
-    def __search_movie(self, chat_id: int, query: str):
+    def _search_movie(self, chat_id: int, query: str):
         loading_msg = self.bot.send_message(
             chat_id,
             "⌛️ <i>Searching movies...</i>",
@@ -171,7 +178,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                 return
 
             self.search_cache[chat_id] = movies
-            self.__render_page(chat_id, 0)
+            self._render_page(chat_id, 0)
 
         except OMDbServiceError as e:
             self.bot.delete_message(chat_id, loading_msg.message_id)
@@ -182,7 +189,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                 parse_mode='HTML'
             )
 
-    def __render_page(self, chat_id: int, page: int, message_id: int = None):
+    def _render_page(self, chat_id: int, page: int, message_id: int = None):
         movies = self.search_cache.get(chat_id)
 
         if not movies:
@@ -204,7 +211,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
         for movie in page_movies:
             markup.add(
                 types.InlineKeyboardButton(
-                    f"{self.__safe(movie.get('Title'))} ({self.__safe(movie.get('Year'))})",
+                    f"{self._safe(movie.get('Title'))} ({self._safe(movie.get('Year'))})",
                     callback_data=self.cb_factory.new(
                         action="details",
                         value=movie.get("imdbID")
@@ -212,9 +219,12 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                 )
             )
 
-        markup.row(*self.__build_navigation(page, total_pages))
+        markup.row(*self._build_navigation(page, total_pages))
 
-        text = f"🔍 <b>Found:</b> <i>{len(movies)}</i>\n\n📃<b>Page:</b> <i>{page + 1}/{total_pages}</i>"
+        text = (
+            f"🔍 <b>Found:</b> <i>{len(movies)}</i>\n\n"
+            f"📃<b>Page:</b> <i>{page + 1}/{total_pages}</i>"
+        )
 
         if message_id:
             try:
@@ -226,8 +236,8 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                     parse_mode="HTML"
                 )
                 return
-            except Exception:
-                pass
+            except telebot.apihelper.ApiTelegramException as e:
+                self.logger.warning("Failed to edit message: %s", e)
 
         self.bot.send_message(
             chat_id,
@@ -236,7 +246,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
             parse_mode="HTML"
         )
 
-    def __build_navigation(self, page: int, total_pages: int):
+    def _build_navigation(self, page: int, total_pages: int):
         nav = []
 
         if page > 0:
@@ -265,7 +275,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
 
         return nav
 
-    def __send_movie_details(self, chat_id: int, imdb_id: str):
+    def _send_movie_details(self, chat_id: int, imdb_id: str):
         loading_msg = self.bot.send_message(
             chat_id,
             "⌛️ <i>Loading...</i>",
@@ -286,11 +296,11 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
             return
 
         text = (
-            f"🎬 <b>Title:</b> <i>{self.__safe(data.get('Title'))}</i>\n\n"
-            f"📅 <b>Year:</b> <i>{self.__safe(data.get('Year'))}</i>\n"
-            f"⭐ <b>IMDB:</b> <i>{self.__safe(data.get('imdbRating'))}</i>\n"
-            f"🎭 <b>Genre:</b> <i>{self.__safe(data.get('Genre'))}</i>\n\n"
-            f"📕 <b>Plot:</b> <i>{self.__safe(data.get('Plot'))}</i>"
+            f"🎬 <b>Title:</b> <i>{self._safe(data.get('Title'))}</i>\n\n"
+            f"📅 <b>Year:</b> <i>{self._safe(data.get('Year'))}</i>\n"
+            f"⭐ <b>IMDB:</b> <i>{self._safe(data.get('imdbRating'))}</i>\n"
+            f"🎭 <b>Genre:</b> <i>{self._safe(data.get('Genre'))}</i>\n\n"
+            f"📕 <b>Plot:</b> <i>{self._safe(data.get('Plot'))}</i>"
         )
 
         poster = data.get("Poster")
@@ -304,8 +314,8 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
                     parse_mode='HTML'
                 )
                 return
-            except Exception:
-                pass
+            except telebot.apihelper.ApiTelegramException as e:
+                self.logger.info("Failed to send message with poster: %s", e)
 
         self.bot.send_message(
             chat_id,
@@ -313,5 +323,5 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
             parse_mode='HTML'
         )
 
-    def __safe(self, value, default="—"):
+    def _safe(self, value, default="—"):
         return default if not value or value == "N/A" else value
