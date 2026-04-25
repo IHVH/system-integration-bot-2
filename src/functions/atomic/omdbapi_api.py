@@ -65,7 +65,7 @@ class AtomicMovieSearchBotFunction(AtomicBotFunctionABC):
     """Команды для поиска фильмов через OMDb API."""
 
     commands: List[str] = ["movie", "film"]
-    authors: List[str] = ["BLazzeD"]
+    authors: List[str] = ["BLazzeD21"]
     about: str = "Поиск фильмов через OMDb"
 
     description: str = """
