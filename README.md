@@ -33,6 +33,8 @@ Links to information about tokens
 
 [FREE_CURRENCY_API_KEY](https://freecurrencyapi.com/)
 
+[API_KEY_FINN_HUB] (https://finnhub.io)
+
 ```
 LOGLEVEL=ERROR
 TBOT_LOGLEVEL=ERROR
