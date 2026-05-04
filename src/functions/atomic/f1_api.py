@@ -31,3 +31,18 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         if not self.logger.handlers:
             self.logger.addHandler(handler)
         self.logger.info("F1ApiBotFunction initialized")
+    
+    def _fetch_season_races(self, season: str) -> list | None:
+        '''Получает список гонок выбранного сезона'''
+        self.logger.info("Fetching races started")
+        url = f"{self.api_url}/{season}"
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            races = data["MRData"]["RaceTable"]["Races"]
+            self.logger.info("Fetched %d races for season %s", len(races), season)
+        except (requests.RequestException, KeyError) as e:
+            self.logger.error("Failed to fetch %s: %s", season, e)
+            return None
+        
