@@ -20,6 +20,7 @@ from xml.etree import ElementTree
 import requests
 import telebot
 from telebot import types
+from telebot.callback_data import CallbackData
 
 from bot_func_abc import AtomicBotFunctionABC
 
@@ -35,7 +36,7 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
     """
 
     commands: List[str] = ["cbrmenu"]
-    authors: List[str] = ["IHVH"]
+    authors: List[str] = ["FilonovGrigoriy"]
     about: str = "Меню курсов валют ЦБ РФ"
     description: str = (
         "Открывает меню работы с курсами валют ЦБ РФ. "
@@ -65,6 +66,7 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
     )
 
     bot: telebot.TeleBot
+    callback_factory: CallbackData
     user_rate_states: Dict[int, Dict[str, str]]
     user_conversion_states: Dict[int, Dict[str, object]]
 
@@ -80,15 +82,20 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
             bot: Объект Telegram-бота из библиотеки pyTelegramBotAPI.
         """
         self.bot = bot
+        self.callback_factory = CallbackData(
+            "action",
+            "value",
+            prefix=self.commands[0],
+        )
 
-        @bot.message_handler(commands=[self.commands[0]])
+        @bot.message_handler(commands=self.commands)
         def cbr_menu_handler(message: types.Message) -> None:
             """Обработать команду /cbrmenu."""
             self._show_main_menu(message.chat.id)
 
         @bot.callback_query_handler(
-            func=lambda call: bool(call.data)
-            and call.data.startswith("cbr:")
+            func=None,
+            config=self.callback_factory.filter(),
         )
         def cbr_callback_handler(call: types.CallbackQuery) -> None:
             """Обработать нажатие кнопки из меню ЦБ РФ."""
@@ -102,9 +109,9 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
         """
         self.bot.answer_callback_query(call.id)
         chat_id = call.message.chat.id
-        data = call.data or ""
-        parts = data.split(":")
-        action = parts[1] if len(parts) > 1 else ""
+        callback_data = self.callback_factory.parse(callback_data=call.data)
+        action = callback_data["action"]
+        value = callback_data["value"]
 
         try:
             if action == "menu":
@@ -113,20 +120,20 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
                 self._send_help_message(chat_id)
             elif action == "rate_start":
                 self._start_rate_button_flow(chat_id)
-            elif action == "rate_source" and len(parts) == 3:
-                self._choose_rate_source(chat_id, parts[2])
-            elif action == "rate_target" and len(parts) == 3:
-                self._finish_rate_button_flow(chat_id, parts[2])
+            elif action == "rate_source":
+                self._choose_rate_source(chat_id, value)
+            elif action == "rate_target":
+                self._finish_rate_button_flow(chat_id, value)
             elif action == "convert_start":
                 self._start_convert_button_flow(chat_id)
-            elif action == "convert_source" and len(parts) == 3:
-                self._choose_convert_source(chat_id, parts[2])
-            elif action == "convert_target" and len(parts) == 3:
-                self._finish_convert_button_flow(chat_id, parts[2])
+            elif action == "convert_source":
+                self._choose_convert_source(chat_id, value)
+            elif action == "convert_target":
+                self._finish_convert_button_flow(chat_id, value)
             elif action == "list_start":
                 self._start_currency_list_flow(chat_id)
-            elif action == "list_source" and len(parts) == 3:
-                self._finish_currency_list_flow(chat_id, parts[2])
+            elif action == "list_source":
+                self._finish_currency_list_flow(chat_id, value)
             else:
                 self.bot.send_message(chat_id, "Неизвестное действие меню.")
         except (
@@ -143,24 +150,17 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
             chat_id: Идентификатор чата Telegram.
         """
         markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            types.InlineKeyboardButton(
-                "Курс одной валюты",
-                callback_data="cbr:rate_start",
-            ),
-            types.InlineKeyboardButton(
-                "Перевод суммы",
-                callback_data="cbr:convert_start",
-            ),
-            types.InlineKeyboardButton(
-                "Список валют",
-                callback_data="cbr:list_start",
-            ),
-            types.InlineKeyboardButton(
-                "Инструкция",
-                callback_data="cbr:help",
-            ),
+        buttons_data = (
+            ("Курс одной валюты", "rate_start"),
+            ("Перевод суммы", "convert_start"),
+            ("Список валют", "list_start"),
+            ("Инструкция", "help"),
         )
+        buttons = [
+            self._make_button(text, action)
+            for text, action in buttons_data
+        ]
+        markup.add(*buttons)
         self.bot.send_message(
             chat_id,
             "Меню курсов валют ЦБ РФ:",
@@ -387,26 +387,20 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
         Args:
             chat_id: Идентификатор чата Telegram.
             title: Текст над клавиатурой.
-            callback_action: Часть callback_data, определяющая действие.
+            callback_action: Действие для callback-кнопки.
         """
         markup = types.InlineKeyboardMarkup(row_width=3)
-        buttons = []
-
-        for code, flag, _name in self.popular_currencies:
-            buttons.append(
-                types.InlineKeyboardButton(
-                    f"{code} {flag}",
-                    callback_data=f"cbr:{callback_action}:{code}",
-                )
+        buttons = [
+            self._make_button(
+                f"{code} {flag}",
+                callback_action,
+                code,
             )
+            for code, flag, _name in self.popular_currencies
+        ]
 
         markup.add(*buttons)
-        markup.add(
-            types.InlineKeyboardButton(
-                "Назад в меню",
-                callback_data="cbr:menu",
-            )
-        )
+        markup.add(self._make_button("Назад в меню", "menu"))
         self.bot.send_message(chat_id, title, reply_markup=markup)
 
     def _send_help_message(self, chat_id: int) -> None:
@@ -434,21 +428,37 @@ class CbrCurrencyBotFunction(AtomicBotFunctionABC):
             reply_markup=self._back_to_menu_markup(),
         )
 
-    @staticmethod
-    def _back_to_menu_markup() -> types.InlineKeyboardMarkup:
+    def _back_to_menu_markup(self) -> types.InlineKeyboardMarkup:
         """Создать inline-кнопку возврата в меню.
 
         Returns:
             Клавиатура с кнопкой возврата в меню.
         """
         markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            types.InlineKeyboardButton(
-                "Назад в меню",
-                callback_data="cbr:menu",
-            )
-        )
+        markup.add(self._make_button("Назад в меню", "menu"))
         return markup
+
+    def _make_button(
+        self,
+        text: str,
+        action: str,
+        value: str = "none",
+    ) -> types.InlineKeyboardButton:
+        """Создать кнопку с callback_data через CallbackData.
+
+        Args:
+            text: Текст кнопки.
+            action: Действие, которое нужно обработать после нажатия.
+            value: Дополнительное значение, например код валюты.
+
+        Returns:
+            Inline-кнопка Telegram.
+        """
+        callback_data = self.callback_factory.new(
+            action=action,
+            value=value,
+        )
+        return types.InlineKeyboardButton(text, callback_data=callback_data)
 
     def convert_amount(
         self,
