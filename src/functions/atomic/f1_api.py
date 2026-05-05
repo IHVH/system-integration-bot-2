@@ -17,7 +17,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         "Показывает результаты сезона Формула 1."
         "Используйте: /f1 <год сезона> (например, /f1 2026)."
     )
-    state: bool = False
+    state: bool = True
     bot: telebot.TeleBot
     logger: logging.Logger
     api_url: str = "https://api.jolpi.ca/ergast/f1"
@@ -62,7 +62,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                 bot.send_message(message.chat.id, f"⚠️ Гонки для сезона {season} не найдены.")
                 return
             
-            text = f"🏎️ *Сезон Формула 1 - {season}\nВсего этапов: {len(races)}\n\nВыберите гонку:"
+            text = f"🏎️ *Сезон Формула 1 - {season}*\nВсего этапов: {len(races)}\n\nВыберите гонку:"
             markup = types.InlineKeyboardMarkup(row_width=1)
             
             for race in races:
@@ -93,10 +93,10 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             drivers = results.get("drivers", [])
             
             if not drivers:
-                bot.send_message(call.message.chat.id, f"⚠️ Результаты гонки {race_name} пока недоступны.", parse_mode="Markdown")
+                bot.send_message(call.message.chat.id, f"⚠️ Результаты гонки *{race_name}* пока недоступны.", parse_mode="Markdown")
                 return
             
-            lines = [f"🏁 {race_name} ({race_date})\n"]
+            lines = [f"🏁 *{race_name}* ({race_date})\n"]
             medals = {1: "🥇", 2: "🥈", 3: "🥉"}
             
             for driver in drivers:
@@ -119,6 +119,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             data = response.json()
             races = data["MRData"]["RaceTable"]["Races"]
             self.logger.info("Fetched %d races for season %s", len(races), season)
+            return races
         except (requests.RequestException, KeyError) as e:
             self.logger.error("Failed to fetch %s: %s", season, e)
             return None
@@ -143,7 +144,12 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                     "status": result.get("status", "-") 
                 })
                 
-            return {"race": race, "drivers": drivers}
+            return {
+                "race": race,
+                "raceName": race.get("raceName", "Неизвестная гонка"),
+                "date": race.get("date", "?"),
+                "drivers": drivers
+            }
         
         except (requests.RequestException, KeyError, IndexError) as e:
             self.logger.error("Failed to fetch results for %s round %s: %s", season, round_num, e)
