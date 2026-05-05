@@ -45,4 +45,29 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         except (requests.RequestException, KeyError) as e:
             self.logger.error("Failed to fetch %s: %s", season, e)
             return None
+    
+    def _fetch_race_results(self, season: str, round_num: str) -> dict | None:
+        '''Получаем результаты конкретной гонки'''
+        self.logger.info("Fetching results for round %s started", round_num)
+        url = f"{self.api_url}/{season}/{round_num}/results"
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            race = data["MRData"]["RaceTable"]["Races"][0]
+            
+            drivers = []
+            for result in race.get("Results", []):
+                drivers.append({
+                    "position": result.get("position", "?"),
+                    "name": f"{result['Driver']['givenName']} {result['Driver']['familyName']}",
+                    "constructor": result["Constructor"]["name"],
+                    "time": result.get("Time", {}).get("time", None),
+                    "status": result.get("status", "-") 
+                })
+                
+            return {"race": race, "drivers": drivers}
         
+        except (requests.RequestException, KeyError, IndexError) as e:
+            self.logger.error("Failed to fetch results for %s round %s: %s", season, round_num, e)
+            return None
