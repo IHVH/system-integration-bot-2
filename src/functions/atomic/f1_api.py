@@ -32,6 +32,83 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             self.logger.addHandler(handler)
         self.logger.info("F1ApiBotFunction initialized")
     
+    def set_handlers(self, bot: telebot.TeleBot):
+        self.bot = bot
+        self.logger.info("Setting handlers for /f1")
+        
+        @bot.message_handler(commands=["f1"])
+        def get_season(message: types.Message):
+            self.logger.info("Command /f1 triggered by user %s", message.from_user.username)
+            
+            parts = message.text.split()
+            if len(parts) < 2:
+                bot.send_message(message.chat.id, "Укажите год нужного вам сезона, например: /f1 2026")
+                return
+            
+            season = parts[1]
+            
+            if not season.isdigit() or not (1950 <= int(season) <= 2026):
+                bot.send_message(message.chat.id, "❌ Некорректный год. Укажите год от 1950 до текущего, например: /f1 2026")
+                return
+            
+            bot.send_message(message.chat.id, f"🔍 Загружаю данные сезона {season}...")
+            
+            races = self._fetch_season_races(season)
+            if races is None:
+                bot.send_message(message.chat.id, "❌ Не удалось получить данные.")
+                return
+            
+            if not races:
+                bot.send_message(message.chat.id, f"⚠️ Гонки для сезона {season} не найдены.")
+                return
+            
+            text = f"🏎️ *Сезон Формула 1 - {season}\nВсего этапов: {len(races)}\n\nВыберите гонку:"
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            
+            for race in races:
+                round_num = race.get("round", "?")
+                race_name = race.get("raceName", "Неизвестная гонка")
+                date = race.get("date", "Дата неизвестна")
+                label = f"Этап {round_num}: {race_name} ({date})"
+                callback_data = f"f1_race_{season}_{round_num}"
+                markup.add(types.InlineKeyboardButton(label, callback_data=callback_data))
+            
+            bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=markup)
+        
+        @bot.callback_query_handler(func=lambda call: call.data.startswith("f1_race_"))
+        def handle_race_selection(call: types.CallbackQuery):
+            """Обрабатывает выбор гонки и показывает результаты."""
+            _, _, season, round_num = call.data.split("_", 3)
+            
+            bot.answer_callback_query(call.id, f"Загружаю результаты этапа {round_num}...")
+            
+            results = self._fetch_race_results(season, round_num)
+            if results is None:
+                bot.send_message(call.message.chat.id, "❌ Не удалось получить результаты гонки.")
+                return
+            
+            race_info = results.get("race", {})
+            race_name = results.get("raceName", "Неизвестная гонка")
+            race_date = results.get("date", "?")
+            drivers = results.get("drivers", [])
+            
+            if not drivers:
+                bot.send_message(call.message.chat.id, f"⚠️ Результаты гонки {race_name} пока недоступны.", parse_mode="Markdown")
+                return
+            
+            lines = [f"🏁 {race_name} ({race_date})\n"]
+            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+            
+            for driver in drivers:
+                pos = driver.get("position", "?")
+                name = driver.get("name", "Неизвестно")
+                team = driver.get("constructor", "?")
+                time = driver.get("time", driver.get("status", "-"))
+                medal = medals.get(int(pos), f"{pos}.")
+                lines.append(f"{medal} {name} ({team}) - {time}")
+                
+            bot.send_message(call.message.chat.id, "\n".join(lines), parse_mode="Markdown")
+    
     def _fetch_season_races(self, season: str) -> list | None:
         '''Получает список гонок выбранного сезона'''
         self.logger.info("Fetching races started")
