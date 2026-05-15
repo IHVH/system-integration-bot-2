@@ -8,7 +8,8 @@ import telebot
 from load_atomic import load_atomic_functions
 from bot_middleware import Middleware
 from bot_callback_filter import BotCallbackCustomFilter
-
+from dotenv import load_dotenv
+load_dotenv()
 class StartApp():
     """Configuring and running the application"""
 
@@ -35,7 +36,7 @@ class StartApp():
         log = logging.getLogger(__name__)
         log.setLevel(self.__get_log_level(self._LOGLEVEL_ENV_KEY))
         handler = logging.FileHandler(f"{__name__}.log")
-        formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
+        formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")print("TBOTTOKEN =", os.environ.get("TBOTTOKEN"))
         handler.setFormatter(formatter)
         log.addHandler(handler)
         console_handler = logging.StreamHandler(sys.stderr)

@@ -3,3 +3,4 @@ pyTelegramBotAPI
 sqlalchemy
 sqlalchemy-utils
 pylint
+requests
