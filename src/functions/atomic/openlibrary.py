@@ -1,4 +1,5 @@
-"""Module implementation of the atomic function of the telegram bot. Open Library API integration."""
+"""Module implementation of the atomic function of the telegram bot.
+Open Library API integration."""
 
 from typing import List, Dict, Optional
 import logging
@@ -58,6 +59,7 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                     parse_mode="Markdown"
                 )
                 return
+            
             author_name = args[1].strip()
             self.bot.send_chat_action(message.chat.id, "typing")
             results = self._search_books(author_name, search_type="author")
@@ -102,7 +104,8 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                 results = self._search_books(query, search_type=search_type)
 
             mode_names = {"title": "по названию", "author": "по автору", "online": "онлайн"}
-            self._send_results(chat_id, results, f"{mode_names.get(search_type, 'по запросу')} \"{query}\"")
+            mode_text = f"{mode_names.get(search_type, 'по запросу')} \"{query}\""
+            self._send_results(chat_id, results, mode_text)
 
             self._user_states.pop(chat_id, None)
 
@@ -119,11 +122,19 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
             reply_markup=markup
         )
 
-    def _search_books(self, query: str, search_type: str = "title", limit: Optional[int] = None) -> List[dict]:
+    def _search_books(
+        self,
+        query: str,
+        search_type: str = "title",
+        limit: Optional[int] = None
+    ) -> List[dict]:
         if limit is None:
             limit = self.MAX_RESULTS
 
-        q = f'{search_type}:"{query}"' if search_type in ("title", "author") else query
+        if search_type in ("title", "author"):
+            q = f'{search_type}:"{query}"'
+        else:
+            q = query
         params = {"q": q, "limit": limit * 2}
 
         try:
@@ -159,7 +170,8 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                 continue
             try:
                 time.sleep(0.3)
-                resp = requests.get(f"{self.BOOKS_URL}{book['edition_key']}.json", timeout=5)
+                url = f"{self.BOOKS_URL}{book['edition_key']}.json"
+                resp = requests.get(url, timeout=5)
                 if resp.status_code == 200:
                     data = resp.json()
                     if "ocaid" in data:
@@ -196,8 +208,15 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
             lines.append("")
 
         text = "\n".join(lines).strip()
-        self.bot.send_message(chat_id, text, parse_mode="Markdown", disable_web_page_preview=True)
+        self.bot.send_message(
+            chat_id,
+            text,
+            parse_mode="Markdown",
+            disable_web_page_preview=True
+        )
 
     @staticmethod
     def _escape_md(text: str) -> str:
-        return text.replace("_", "\\_").replace("*", "\\*").replace("[", "\\[").replace("`", "\\`").replace("]", "\\]")
+        text = text.replace("_", "\\_").replace("*", "\\*")
+        text = text.replace("[", "\\[").replace("`", "\\`")
+        return text.replace("]", "\\]")
