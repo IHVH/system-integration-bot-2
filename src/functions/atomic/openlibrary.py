@@ -116,7 +116,7 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
     def _show_search_menu(self, chat_id: int):
         markup = types.InlineKeyboardMarkup(row_width=1)
         prefix = self.callback_prefixes[0]
-        
+
         btn_title = types.InlineKeyboardButton(
             "По названию книги",
             callback_data=f"{prefix}title"
