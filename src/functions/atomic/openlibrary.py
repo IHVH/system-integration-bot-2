@@ -16,7 +16,6 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
     """Integration with OpenLibrary API for book searching."""
 
     commands: List[str] = ["find_book", "find_author"]
-    callback_prefixes: List[str] = ["open_library_book_search_"]
     authors: List[str] = ["Ankik-69"]
     state: bool = True
     about: str = "Поиск книг в OpenLibrary"
@@ -67,11 +66,11 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
             self._send_results(message.chat.id, results, f"по автору \"{author_name}\"")
 
         @bot.callback_query_handler(
-            func=lambda call: call.data.startswith(self.callback_prefixes[0])
+            func=lambda call: call.data.startswith(self.commands[0])
         )
         def handle_search_type_callback(call: types.CallbackQuery):
             chat_id = call.message.chat.id
-            action = call.data.replace(self.callback_prefixes[0], "")
+            action = call.data.replace(self.commands[0], "")
 
             self._user_states[chat_id] = {"step": "waiting_query", "search_type": action}
 
@@ -115,19 +114,19 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
 
     def _show_search_menu(self, chat_id: int):
         markup = types.InlineKeyboardMarkup(row_width=1)
-        prefix = self.callback_prefixes[0]
+        cmd = self.commands[0]
 
         btn_title = types.InlineKeyboardButton(
             "По названию книги",
-            callback_data=f"{prefix}title"
+            callback_data=f"{cmd}title"
         )
         btn_author = types.InlineKeyboardButton(
             "Книги автора",
-            callback_data=f"{prefix}author"
+            callback_data=f"{cmd}author"
         )
         btn_online = types.InlineKeyboardButton(
             "Доступно онлайн",
-            callback_data=f"{prefix}online"
+            callback_data=f"{cmd}online"
         )
         markup.add(btn_title, btn_author, btn_online)
 
