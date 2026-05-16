@@ -15,7 +15,7 @@ class JokeBotFunction(AtomicBotFunctionABC):
     # pylint: disable=too-few-public-methods
 
     commands: List[str] = ["joke"]
-    authors: List[str] = ["GITHUB_ЛОГИН"]
+    authors: List[str] = ["ttamerrrr"]
 
     about: str = "Случайная шутка"
 
