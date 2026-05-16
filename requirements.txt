@@ -6,4 +6,4 @@ pylint
 requests
 yt-dlp
 imageio-ffmpeg
-
+Pillow
