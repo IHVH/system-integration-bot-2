@@ -11,8 +11,8 @@ from bot_func_abc import AtomicBotFunctionABC
 
 logger = logging.getLogger(__name__)
 
-
 class OpenLibraryBotFunction(AtomicBotFunctionABC):
+    """Integration with OpenLibrary API for book searching."""
 
     commands: List[str] = ["find_book", "find_author"]
     authors: List[str] = ["Ankik-69"]
@@ -39,16 +39,17 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
     _user_states: Dict[int, Dict[str, str]] = {}
 
     def set_handlers(self, bot: telebot.TeleBot):
+        """Register all message and callback handlers for the bot."""
         self.bot = bot
 
         @bot.message_handler(commands=[self.commands[0]])
         def handle_find_book(message: types.Message):
-            logger.info(f"Command /find_book from user {message.from_user.id}")
+            logger.info("Command /find_book from user %s", message.from_user.id)
             self._show_search_menu(message.chat.id)
 
         @bot.message_handler(commands=[self.commands[1]])
         def handle_find_author(message: types.Message):
-            logger.info(f"Command /find_author from user {message.from_user.id}")
+            logger.info("Command /find_author from user %s", message.from_user.id)
             args = message.text.split(maxsplit=1)
             if len(args) < 2:
                 self.bot.send_message(
@@ -57,7 +58,6 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                     parse_mode="Markdown"
                 )
                 return
-            
             author_name = args[1].strip()
             self.bot.send_chat_action(message.chat.id, "typing")
             results = self._search_books(author_name, search_type="author")
@@ -168,8 +168,8 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                         online_books.append(book)
                         if len(online_books) >= limit:
                             break
-            except Exception as e:
-                logger.warning(f"Failed to fetch details for {book.get('title')}: {e}")
+            except Exception as e:  # pylint: disable=broad-except
+                logger.warning("Failed to fetch details for %s: %s", book.get("title"), e)
                 continue
 
         return online_books
