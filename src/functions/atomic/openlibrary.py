@@ -16,6 +16,7 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
     """Integration with OpenLibrary API for book searching."""
 
     commands: List[str] = ["find_book", "find_author"]
+    callback_prefixes: List[str] = ["open_library_book_search_"]
     authors: List[str] = ["Ankik-69"]
     state: bool = True
     about: str = "Поиск книг в OpenLibrary"
@@ -65,10 +66,12 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
             results = self._search_books(author_name, search_type="author")
             self._send_results(message.chat.id, results, f"по автору \"{author_name}\"")
 
-        @bot.callback_query_handler(func=lambda call: call.data.startswith("ol_search_"))
+        @bot.callback_query_handler(
+            func=lambda call: call.data.startswith(self.callback_prefixes[0])
+        )
         def handle_search_type_callback(call: types.CallbackQuery):
             chat_id = call.message.chat.id
-            action = call.data.split("_")[-1]
+            action = call.data.replace(self.callback_prefixes[0], "")
 
             self._user_states[chat_id] = {"step": "waiting_query", "search_type": action}
 
@@ -104,16 +107,28 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                 results = self._search_books(query, search_type=search_type)
 
             mode_names = {"title": "по названию", "author": "по автору", "online": "онлайн"}
-            mode_text = f"{mode_names.get(search_type, 'по запросу')} \"{query}\""
+            mode_label = mode_names.get(search_type, "по запросу")
+            mode_text = f'{mode_label} "{query}"'
             self._send_results(chat_id, results, mode_text)
 
             self._user_states.pop(chat_id, None)
 
     def _show_search_menu(self, chat_id: int):
         markup = types.InlineKeyboardMarkup(row_width=1)
-        btn_title = types.InlineKeyboardButton("По названию книги", callback_data="ol_search_title")
-        btn_author = types.InlineKeyboardButton("Книги автора", callback_data="ol_search_author")
-        btn_online = types.InlineKeyboardButton("Доступно онлайн", callback_data="ol_search_online")
+        prefix = self.callback_prefixes[0]
+        
+        btn_title = types.InlineKeyboardButton(
+            "По названию книги",
+            callback_data=f"{prefix}title"
+        )
+        btn_author = types.InlineKeyboardButton(
+            "Книги автора",
+            callback_data=f"{prefix}author"
+        )
+        btn_online = types.InlineKeyboardButton(
+            "Доступно онлайн",
+            callback_data=f"{prefix}online"
+        )
         markup.add(btn_title, btn_author, btn_online)
 
         self.bot.send_message(
