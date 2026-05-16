@@ -14,7 +14,6 @@ import telebot
 from telebot import types
 from bot_func_abc import AtomicBotFunctionABC
 
-
 def _lap_time_to_seconds(raw: str) -> float | None:
     if not raw:
         return None
@@ -36,10 +35,10 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
 
     commands: list[str] = ["f1"]
     authors: list[str] = ["sidorovt"]
-    about: str = "Результаты сезонов Формула 1 с 1950г. по текущий."
+    about: str = "Результаты сезонов Формула 1"
     description: str = (
-        "Показывает результаты сезона Формула 1."
-        "Используйте: /f1 <год сезона> (например, /f1 2026)."
+        "Показывает результаты сезона Формула 1. "
+        "Укажите год интересующего вас сезона, например /f1 2026."
     )
     state: bool = True
     bot: telebot.TeleBot
@@ -66,9 +65,6 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         if not message.text or message.text.startswith("/"):
             return False
         return self._context_key(message) in self._pending_laps_context
-
-    def _clear_laps_context(self, message: types.Message) -> None:
-        self._pending_laps_context.pop(self._context_key(message), None)
 
     def _build_laps_chart(self, laps: list[dict], title: str) -> io.BytesIO | None:
         xs: list[int] = []
@@ -97,6 +93,48 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         buf.seek(0)
         return buf
 
+    @staticmethod
+    def _photo_caption_with_overflow(body: str, limit: int = 1024) -> tuple[str, str | None]:
+        """Подпись к графику не длиннее лимита; хвост возвращается в другом сообщении."""
+
+        if len(body) <= limit:
+            return body, None
+        lines = body.split("\n")
+        out: list[str] = []
+        for line in lines:
+            candidate = "\n".join(out + [line]) if out else line
+            if len(candidate) <= limit:
+                out.append(line)
+            else:
+                break
+        if not out:
+            head = lines[0][:limit]
+            tail = lines[0][limit:]
+            rest_lines = "\n".join(lines[1:]) if len(lines) > 1 else ""
+            overflow_parts = [p for p in (tail, rest_lines) if p]
+            overflow = "\n".join(overflow_parts) if overflow_parts else None
+            return head, overflow
+        rest = "\n".join(lines[len(out) :])
+        return "\n".join(out), rest if rest else None
+
+    @staticmethod
+    def _race_json_to_lap_rows(race: dict) -> tuple[str, list[dict]]:
+        """Метод для преобразования объекта гонки из JSON в имя этапа и список кругов."""
+
+        race_name = race.get("raceName", "")
+        laps_out: list[dict] = []
+        for lap in race.get("Laps") or []:
+            lap_no = lap.get("number")
+            timings = lap.get("Timings") or []
+            time_val = timings[0].get("time") if timings else None
+            position = timings[0].get("position") if timings else None
+            laps_out.append({
+                "lap": lap_no,
+                "time": time_val,
+                "position": position,
+            })
+        return race_name, laps_out
+
     def set_handlers(self, bot: telebot.TeleBot):
         """Метод для обработки сообщений пользователя."""
 
@@ -110,17 +148,35 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
 
             parts = message.text.split()
             if len(parts) < 2:
-                bot.send_message(message.chat.id, "Укажите год нужного вам сезона, например: /f1 2026")
+                bot.send_message(
+                    message.chat.id,
+                    "Укажите год интересующего вас сезона, например /f1 2026",
+                )
                 return
 
             season = parts[1]
 
-            if not season.isdigit() or not (1950 <= int(season) <= max_year):
+            if not season.isdigit():
                 bot.send_message(
                     message.chat.id,
-                    f"❌ Некорректный год. Укажите год от 1950 до {max_year}, например: /f1 {max_year}",
+                    (
+                        f"❌ Некорректный год. Укажите год от 1950 до {max_year}, "
+                        f"например: /f1 {max_year}"
+                    ),
                 )
                 return
+            year = int(season)
+            if year < 1950 or year > max_year:
+                bot.send_message(
+                    message.chat.id,
+                    (
+                        f"❌ Некорректный год. Укажите год от 1950 до {max_year}, "
+                        f"например: /f1 {max_year}"
+                    ),
+                )
+                return
+
+            self._pending_laps_context.pop(self._context_key(message), None)
 
             bot.send_message(message.chat.id, f"🔍 Загружаю данные сезона {season}...")
 
@@ -183,7 +239,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                     medal = medals.get(int(pos), f"{pos}.")
                 except (TypeError, ValueError):
                     medal = f"{pos}."
-                lines.append(f"{medal} {name} ({team}) - {time}")
+                lines.append(f"{medal} {name} ({team}) {time}")
 
             bot.send_message(call.message.chat.id, "\n".join(lines), parse_mode="Markdown")
 
@@ -195,19 +251,25 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
 
             hint = (
                 "Если вас интересуют результаты конкретного пилота по кругам, напишите его фамилию "
-                "маленькими буквами (как в API Ergast), например, для Charles Leclerc — "
-                "`leclerc`, для Max Verstappen — `max_verstappen`."
+                "маленькими буквами, например, для Charles Leclerc — leclerc."
             )
             bot.send_message(call.message.chat.id, hint, parse_mode="Markdown")
 
         @bot.message_handler(func=self._has_pending_laps_context)
-        def handle_driver_laps_request(message: types.Message):
+        def handle_driver_laps_request(
+            message: types.Message,
+        ):
             raw = (message.text or "").strip().lower()
             if not self._driver_ref_pattern.fullmatch(raw):
                 bot.send_message(
                     message.chat.id,
-                    "❌ Укажите один идентификатор пилота латиницей в нижнем регистре "
-                    "(буквы, при необходимости цифры и `_`), например: `leclerc` или `max_verstappen`.",
+                    (
+                        "❌ Укажите фамилию пилота латиницей в нижнем регистре "
+                        "(буквы, при необходимости цифры и `_`). Если фамилия совпадает "
+                        "у нескольких пилотов или не совпадает с идентификатором в базе, "
+                        "укажите полный идентификатор в формате имя_фамилия, например "
+                        "`max_verstappen`."
+                    ),
                     parse_mode="Markdown",
                 )
                 return
@@ -221,9 +283,38 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                 return
 
             season, round_num = ctx["season"], ctx["round"]
-            bot.send_message(message.chat.id, f"🔍 Загружаю круги для `{raw}`...", parse_mode="Markdown")
+            resolved = self._resolve_driver_ref_for_round(season, round_num, raw)
+            if resolved is None:
+                bot.send_message(
+                    message.chat.id,
+                    "❌ Не удалось загрузить список пилотов этапа. Попробуйте позже.",
+                )
+                return
+            driver_id, display_name, ambiguous = resolved
+            if ambiguous:
+                opts = ", ".join(f"`{d}`" for d in ambiguous)
+                bot.send_message(
+                    message.chat.id,
+                    "Несколько пилотов подходят под этот запрос. Укажите идентификатор из списка: "
+                    f"{opts}. Для Макса Ферстаппена: `max_verstappen`.",
+                    parse_mode="Markdown",
+                )
+                return
+            if driver_id is None:
+                bot.send_message(
+                    message.chat.id,
+                    "❌ На этом этапе нет пилота с такой фамилией или идентификатором.",
+                )
+                return
 
-            laps_payload = self._fetch_driver_laps(season, round_num, raw)
+            show = display_name or driver_id
+            bot.send_message(
+                message.chat.id,
+                f"🔍 Загружаю круги для `{driver_id}`...",
+                parse_mode="Markdown",
+            )
+
+            laps_payload = self._fetch_driver_laps(season, round_num, driver_id)
             if laps_payload is None:
                 bot.send_message(
                     message.chat.id,
@@ -237,47 +328,106 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             if not laps:
                 bot.send_message(
                     message.chat.id,
-                    f"⚠️ Нет данных по кругам для `{raw}` на этом этапе.",
+                    f"⚠️ Нет данных по кругам для `{driver_id}` на этом этапе.",
                     parse_mode="Markdown",
                 )
-                self._clear_laps_context(message)
                 return
 
-            text_lines = [
-                f"⏱️ *{race_title}* — `{raw}` (сезон {season}, этап {round_num})\n",
-            ]
+            header = f"⏱️ {race_title} — {show} (сезон {season}, этап {round_num})"
+            lap_lines: list[str] = []
             for lap in laps:
                 lap_no = lap.get("lap", "?")
                 t = lap.get("time", "?")
                 pos = lap.get("position")
                 pos_part = f", позиция на круге {pos}" if pos else ""
-                text_lines.append(f"Круг {lap_no} — {t}{pos_part}")
-
-            chunk: list[str] = []
-            length = 0
-            for line in text_lines:
-                if length + len(line) + 1 > 4000:
-                    bot.send_message(message.chat.id, "\n".join(chunk), parse_mode="Markdown")
-                    chunk = [line]
-                    length = len(line)
-                else:
-                    chunk.append(line)
-                    length += len(line) + 1
-            if chunk:
-                bot.send_message(message.chat.id, "\n".join(chunk), parse_mode="Markdown")
+                lap_lines.append(f"Круг {lap_no} — {t}{pos_part}")
+            list_body = header + "\n" + "\n".join(lap_lines)
 
             chart_buf = self._build_laps_chart(
                 laps,
-                f"{race_title} — {raw}",
+                f"{race_title} — {show}",
             )
             if chart_buf:
-                bot.send_photo(
-                    message.chat.id,
-                    chart_buf,
-                    caption=f"{race_title} — {raw}: время круга по номерам",
-                )
+                caption, overflow = self._photo_caption_with_overflow(list_body)
+                bot.send_photo(message.chat.id, chart_buf, caption=caption)
+                if overflow:
+                    rem = overflow
+                    start = 0
+                    while start < len(rem):
+                        bot.send_message(message.chat.id, rem[start : start + 4000])
+                        start += 4000
+            else:
+                chunk: list[str] = []
+                length = 0
+                all_lines = [header] + lap_lines
+                for line in all_lines:
+                    if length + len(line) + 1 > 4000:
+                        bot.send_message(message.chat.id, "\n".join(chunk))
+                        chunk = [line]
+                        length = len(line)
+                    else:
+                        chunk.append(line)
+                        length += len(line) + 1
+                if chunk:
+                    bot.send_message(message.chat.id, "\n".join(chunk))
 
-            self._clear_laps_context(message)
+    def _fetch_round_drivers(self, season: str, round_num: str) -> list[dict[str, str]] | None:
+        """Метод возвращающий список пилотов, заявленных на этап."""
+
+        url = f"{self.api_url}/{season}/{round_num}/drivers.json"
+        try:
+            response = requests.get(url, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            raw_list = data["MRData"]["DriverTable"].get("Drivers") or []
+        except (requests.RequestException, KeyError, TypeError) as e:
+            self.logger.error("Failed to fetch drivers for %s round %s: %s", season, round_num, e)
+            return None
+
+        out: list[dict[str, str]] = []
+        for d in raw_list:
+            if not isinstance(d, dict):
+                continue
+            did = d.get("driverId") or ""
+            if not did:
+                continue
+            out.append({
+                "id": did,
+                "given": d.get("givenName") or "",
+                "family": d.get("familyName") or "",
+            })
+        return out
+
+    def _resolve_driver_ref_for_round(
+        self,
+        season: str,
+        round_num: str,
+        raw: str,
+    ) -> tuple[str, str, None] | tuple[None, None, list[str]] | tuple[None, None, None] | None:
+        """Метод сопоставляющий ввод с driverId."""
+
+        entries = self._fetch_round_drivers(season, round_num)
+        if entries is None:
+            return None
+
+        by_family: dict[str, list[tuple[str, str]]] = {}
+        for e in entries:
+            did = e["id"]
+            display = f"{e['given']} {e['family']}".strip() or did
+            if did.lower() == raw:
+                return (did, display, None)
+            fam_key = e["family"].lower().replace(" ", "_")
+            by_family.setdefault(fam_key, []).append((did, display))
+
+        matches = by_family.get(raw, [])
+        if len(matches) == 1:
+            did, display = matches[0]
+            return (did, display, None)
+        if len(matches) > 1:
+            ids = sorted({m[0] for m in matches})
+            return (None, None, ids)
+
+        return (None, None, None)
 
     def _fetch_season_races(self, season: str) -> list | None:
         """Метод получающий список гонок выбранного сезона."""
@@ -328,7 +478,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             return None
 
     def _fetch_driver_laps(self, season: str, round_num: str, driver_ref: str) -> dict | None:
-        """Загружает круги пилота на этапе (Ergast / Jolpi)."""
+        """Метод для загрузки кругов пилота на этапе."""
 
         self.logger.info("Fetching laps for %s/%s driver %s", season, round_num, driver_ref)
         url = f"{self.api_url}/{season}/{round_num}/drivers/{driver_ref}/laps.json"
@@ -341,18 +491,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             if not races:
                 return {"raceName": "", "laps": []}
             race = races[0]
-            race_name = race.get("raceName", "")
-            laps_out: list[dict] = []
-            for lap in race.get("Laps") or []:
-                lap_no = lap.get("number")
-                timings = lap.get("Timings") or []
-                time_val = timings[0].get("time") if timings else None
-                position = timings[0].get("position") if timings else None
-                laps_out.append({
-                    "lap": lap_no,
-                    "time": time_val,
-                    "position": position,
-                })
+            race_name, laps_out = self._race_json_to_lap_rows(race)
             return {"raceName": race_name, "laps": laps_out}
         except (requests.RequestException, KeyError, IndexError) as e:
             self.logger.error(
