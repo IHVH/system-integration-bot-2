@@ -18,7 +18,7 @@ class AviationWeatherBotFunction(AtomicBotFunctionABC):
 
     commands = ["aviation"]
     authors = ["cactius"]
-    about = "Авиационная погода по ICAO-коду аэропорта"
+    about = "Погода по ICAO-коду аэропорта"
     description = (
         "Функция показывает METAR по ICAO-коду аэропорта. "
         "Пример: /aviation ULLI, UUDD, UUWW, UNNT. "
