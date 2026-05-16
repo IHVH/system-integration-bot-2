@@ -59,7 +59,7 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
                     parse_mode="Markdown"
                 )
                 return
-            
+
             author_name = args[1].strip()
             self.bot.send_chat_action(message.chat.id, "typing")
             results = self._search_books(author_name, search_type="author")
@@ -112,7 +112,7 @@ class OpenLibraryBotFunction(AtomicBotFunctionABC):
     def _show_search_menu(self, chat_id: int):
         markup = types.InlineKeyboardMarkup(row_width=1)
         btn_title = types.InlineKeyboardButton("По названию книги", callback_data="ol_search_title")
-        btn_author = types.InlineKeyboardButton("Все книги автора", callback_data="ol_search_author")
+        btn_author = types.InlineKeyboardButton("Книги автора", callback_data="ol_search_author")
         btn_online = types.InlineKeyboardButton("Доступно онлайн", callback_data="ol_search_online")
         markup.add(btn_title, btn_author, btn_online)
 
