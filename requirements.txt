@@ -1,5 +1,9 @@
 pyTelegramBotAPI
-#psycopg2
+psycopg2
 sqlalchemy
 sqlalchemy-utils
 pylint
+requests
+yt-dlp
+imageio-ffmpeg
+Pillow

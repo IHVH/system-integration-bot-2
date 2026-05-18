@@ -5,9 +5,12 @@ import sys
 import os
 from typing import List
 import telebot
+from telebot.callback_data import CallbackData
 from load_atomic import load_atomic_functions
 from bot_middleware import Middleware
 from bot_callback_filter import BotCallbackCustomFilter
+from bot_func_abc import AtomicBotFunctionABC
+from functions.defoult_bot_function import DefoultBotFunction
 
 class StartApp():
     """Configuring and running the application"""
@@ -15,13 +18,16 @@ class StartApp():
     _LOGLEVEL_ENV_KEY = "LOGLEVEL"
     _TBOT_LOGLEVEL_ENV_KEY = "TBOT_LOGLEVEL"
     _TBOTTOKEN_ENV_KEY = "TBOTTOKEN"
+    _TBOT_PROXY_ENV_KEY = "TBOT_PROXY"
+
+    keyboard_factory: CallbackData
 
     def __init__(self, start_comannds: List[str]):
         self.logger = self.get_logger()
         self.bot = self.__get_bot()
         self.atom_functions_list = load_atomic_functions()
         self.__decorate_atomic_functions()
-        self.__decorate_defoult_functions(start_comannds)
+        self.__decorate_defoult_functions(start_comannds, self.atom_functions_list)
         self.__add_middleware()
         self.__add_filter()
 
@@ -56,8 +62,21 @@ class StartApp():
         token = os.environ[self._TBOTTOKEN_ENV_KEY]
         log_level = self.__get_log_level(self._TBOT_LOGLEVEL_ENV_KEY)
         telebot.logger.setLevel(log_level)
+        self.__configure_proxy()
         new_bot = telebot.TeleBot(token, use_class_middlewares=True)
         return new_bot
+
+    def __configure_proxy(self):
+        """Configure bot proxy if TBOT_PROXY is set."""
+        proxy_url = os.environ.get(self._TBOT_PROXY_ENV_KEY)
+        if proxy_url:
+            telebot.apihelper.proxy = {
+                'http': proxy_url,
+                'https': proxy_url,
+            }
+            self.logger.info('Bot proxy configured: %s', proxy_url)
+        else:
+            self.logger.info('No bot proxy configured.')
 
     def __add_middleware(self):
         """Registering Middleware for Bot"""
@@ -82,20 +101,10 @@ class StartApp():
                 funct.state = False
                 self.logger.warning("%s - start EXCEPTION!", funct)
 
-    def __decorate_defoult_functions(self, start_comannds: List[str]):
+    def __decorate_defoult_functions(self, start_comannds: List[str],
+    functions_list: List[AtomicBotFunctionABC]):
         """Decorate the function for handling startup commands
         and the function for handling uncaught messages"""
 
-        @self.bot.message_handler(commands=start_comannds)
-        def start_message(message):
-            txt = "Доступные функции: \n"
-            for funct in self.atom_functions_list:
-                txt += f"/{funct.commands[0]} - {funct.about} \n"
-            self.bot.send_message(text=txt, chat_id=message.chat.id)
-
-        @self.bot.message_handler(func=lambda message: True)
-        def text_messages(message):
-            self.bot.reply_to(message, "Text = " + message.text)
-            cmd = "\n /".join(start_comannds)
-            msg = f"To begin, enter one of the commands \n /{cmd}"
-            self.bot.send_message(text=msg, chat_id=message.chat.id)
+        defouit_function = DefoultBotFunction(start_comannds, functions_list)
+        defouit_function.set_handlers(self.bot)

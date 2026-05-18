@@ -24,6 +24,7 @@ class AtomicExampleBotFunction(AtomicBotFunctionABC):
     example_keyboard_factory: CallbackData
 
     def set_handlers(self, bot: telebot.TeleBot):
+        """Set message handlers"""
 
         self.bot = bot
         self.example_keyboard_factory = CallbackData('t_key_button', prefix=self.commands[0])

@@ -8,4 +8,5 @@ class BotCallbackCustomFilter(AdvancedCustomFilter): # pylint: disable=too-few-p
     """Callback query custom filter"""
     key = 'config'
     def check(self, message: types.CallbackQuery, text: CallbackDataFilter):
+        """Check CallbackQuery"""
         return text.check(query=message)

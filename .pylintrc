@@ -1,1 +1,5 @@
 [MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    import-error,
+    duplicate-code

@@ -11,9 +11,11 @@ class Middleware(BaseMiddleware):
     """Pre-process and post-process processing of incoming messages"""
 
     def pre_process(self, message, data):
+        """BaseMiddleware method"""
         raise NotImplementedError
 
     def post_process(self, message, data, exception):
+        """BaseMiddleware method"""
         raise NotImplementedError
 
     def __init__(self, logger: logging.Logger, bot: telebot.TeleBot):
@@ -105,7 +107,7 @@ class Middleware(BaseMiddleware):
         if message.chat.description:
             chat.description = message.chat.description
         else:
-            chat.description = message.chat.type + " - " + message.chat.username
+            chat.description = f"{message.chat.type} - {message.chat.username}"
         return chat
 
     def __new_message(self, user: User, chat: Chat, txt: str, data: str | None)-> Message:

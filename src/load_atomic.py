@@ -22,4 +22,5 @@ atomic_dir:str = "atomic") -> List[AtomicBotFunctionABC]:
                     obj: AtomicBotFunctionABC = cls()
                     function_objects.append(obj)
                     print(f"{name} - Added!")
+    function_objects.sort(key=lambda f: f.commands[0], reverse=False)
     return function_objects
