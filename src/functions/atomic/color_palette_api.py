@@ -17,7 +17,7 @@ class ColorPaletteBotFunction(AtomicBotFunctionABC):
     """Поиск цветовых палитр через colormagic.app"""
 
     commands: List[str] = ["palette", "color"]
-    authors: List[str] = ["IHVH"]
+    authors: List[str] = ["tr1mdirt13"]
     about: str = "Поиск цветовых палитр по ключевому слову."
     description: str = """Ищет цветовые палитры через ColorMagic API.
     Использование: `/palette green` или `/color sunset`
