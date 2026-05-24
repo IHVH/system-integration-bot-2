@@ -1,207 +1,125 @@
-"""
-Модуль для Telegram бота, который переводит текст и анализирует его на наличие оскорблений и тем.
-Использует MyMemory API для перевода и Tisane API для анализа.
-"""
+# -*- coding: utf-8 -*-
+"""Модуль для перевода и анализа текста через MyMemory и Tisane API."""
 
-import json
-from datetime import datetime
-
-import telebot
+import os
 import requests
-from github import Github, Auth
-
-# Конфигурация (в production использовать переменные окружения)
-TELEGRAM_TOKEN = "TG_BOT_KEY"
-TISANE_API_KEY = "TISANE_KEY"
-GITHUB_TOKEN = "GIT_TOKEN"
-GITHUB_REPO = "shiroyashinu/zadanie_bot"
-
-# Инициализация клиентов
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
-# Используем новый способ авторизации через Auth.Token
-auth = Auth.Token(GITHUB_TOKEN)
-github = Github(auth=auth)
-repo = github.get_repo(GITHUB_REPO)
+import telebot
+from bot_func_abc import AtomicBotFunctionABC
 
 
-def is_russian(text: str) -> bool:
-    """Проверяет, содержит ли текст русские символы."""
-    return any('а' <= character <= 'я' or character == 'ё' for character in text.lower())
+class TranslateBotFunction(AtomicBotFunctionABC):
+    """Перевод и анализ текста через MyMemory и Tisane APIs.
 
-
-def translate_text(text: str, target_lang: str = "en") -> str:
+    Реализует единый обработчик команды /translate. Возвращает перевод, количество
+    найденных оскорблений и топ‑3 темы. Не сохраняет отчёты в GitHub.
     """
-    Переводит текст через MyMemory API.
 
-    Args:
-        text: Текст для перевода
-        target_lang: Целевой язык (по умолчанию "en")
+    commands = ["translate"]
+    authors = ["Adapted"]
+    about = "Перевод и анализ текста"
+    description = (
+        "Отправь любой текст на русском или английском, и бот вернёт перевод,\n"
+        "информацию об оскорблениях и темах.\nПример: /translate привет мир"
+    )
+    state = True
 
-    Returns:
-        Переведенный текст или оригинал в случае ошибки
-    """
-    source = "ru" if is_russian(text) else "en"
+    def __init__(self):
+        """Инициализация функции перевода и анализа текста."""
+        self.tisane_key = os.getenv("TISANE_API_KEY", "TISANE_KEY")
+        # MyMemory не требует токена, но можно добавить переменную при необходимости
 
-    url = "https://api.mymemory.translated.net/get"
-    params = {
-        "q": text,
-        "langpair": f"{source}|{target_lang}"
-    }
+    @staticmethod
+    def _is_russian(text: str) -> bool:
+        """Определяет, содержит ли текст русские буквы."""
+        return any('а' <= ch <= 'я' or ch == 'ё' for ch in text.lower())
 
-    try:
-        response = requests.get(url, params=params, timeout=15)
-        response.raise_for_status()
-        result = response.json()
-        translated = result.get("responseData", {}).get("translatedText", text)
-        # Очистка от HTML-тегов
-        translated = translated.replace("<i>", "").replace("</i>", "")
-        translated = translated.replace("&quot;", '"')
-        return translated
-    except requests.exceptions.RequestException as error:
-        print(f"Translation error: {error}")
-        return text
+    def _translate(self, text: str, target: str = "en") -> str:
+        """Переводит текст через бесплатный API MyMemory."""
+        source = "ru" if self._is_russian(text) else "en"
+        url = "https://api.mymemory.translated.net/get"
+        params = {"q": text, "langpair": f"{source}|{target}"}
+        try:
+            resp = requests.get(url, params=params, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            translated = data.get("responseData", {}).get("translatedText", text)
+            return (
+                translated.replace("<i>", "")
+                .replace("</i>", "")
+                .replace("&quot;", '"')
+            )
+        except requests.RequestException as exc:
+            print(f"Ошибка перевода: {exc}")
+            return text
 
-
-def analyze_text(text: str) -> dict:
-    """
-    Анализирует текст через Tisane API для определения оскорблений, тем и тональности.
-
-    Args:
-        text: Текст для анализа (на английском языке)
-
-    Returns:
-        Словарь с результатами анализа
-    """
-    url = "https://api.tisane.ai/parse"
-    headers = {
-        "Ocp-Apim-Subscription-Key": TISANE_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "content": text,
-        "language": "en",
-        "settings": {
-            "abuse": True,
-            "sentiment": True,
-            "topics": True
+    def _analyze(self, text: str) -> dict:
+        """Анализирует текст через Tisane API: оскорбления, тональность, темы."""
+        url = "https://api.tisane.ai/parse"
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.tisane_key,
+            "Content-Type": "application/json",
         }
-    }
+        payload = {
+            "content": text,
+            "language": "en",
+            "settings": {"abuse": True, "sentiment": True, "topics": True},
+        }
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as exc:
+            print(f"Ошибка анализа: {exc}")
+            return {"abuse": [], "sentiment_expressions": [], "topics": []}
 
-    try:
-        response = requests.post(url, json=data, headers=headers, timeout=30)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as error:
-        print(f"Analysis error: {error}")
-        return {"abuse": [], "sentiment_expressions": [], "topics": []}
+    def set_handlers(self, bot: telebot.TeleBot):
+        """Регистрирует обработчик команды /translate в боте."""
+        @bot.message_handler(commands=self.commands)
+        def handle(message: telebot.types.Message):
+            # Получаем текст после команды
+            text = message.text.partition(" ")[2].strip()
+            if not text:
+                bot.reply_to(message, "Укажите текст после команды. Пример: /translate привет")
+                return
 
+            bot.reply_to(message, "🔍 Обрабатываю ваш запрос…")
 
-def save_to_github(original_text: str, translated_text: str, result: dict) -> str:
-    """
-    Сохраняет результаты анализа в GitHub репозиторий.
+            # Определяем направление перевода
+            if self._is_russian(text):
+                translated = self._translate(text, "en")
+                lang_info = "🇷🇺 Русский → 🇬🇧 Английский"
+                analysis_input = translated
+            else:
+                translated = self._translate(text, "ru")
+                lang_info = "🇬🇧 Английский → 🇷🇺 Русский"
+                analysis_input = text
 
-    Args:
-        original_text: Оригинальный текст
-        translated_text: Переведенный текст
-        result: Результаты анализа от Tisane API
+            # Выполняем анализ текста
+            result = self._analyze(analysis_input)
+            abuse_cnt = len(result.get("abuse", []))
+            topics = result.get("topics", [])[:3]
+            topics_str = ", ".join(topics) if topics else "не найдено"
 
-    Returns:
-        URL сохраненного файла
-    """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"analysis_{timestamp}.json"
+            # Формируем ответ пользователю
+            response = (
+                f"✅ Готово!\n\n{lang_info}\n\n"
+                f"📝 Оригинал: {text[:200]}\n"
+                f"🌐 Перевод: {translated[:200]}\n\n"
+                f"🚫 Оскорблений: {abuse_cnt}\n"
+                f"📚 Темы: {topics_str}"
+            )
+            bot.reply_to(message, response)
 
-    report = {
-        "timestamp": timestamp,
-        "original_text": original_text,
-        "translated_text": translated_text,
-        "abuse": result.get("abuse", []),
-        "sentiment_expressions": result.get("sentiment_expressions", []),
-        "topics": result.get("topics", [])
-    }
-
-    repo.create_file(
-        filename,
-        f"Analysis {timestamp}",
-        json.dumps(report, indent=2, ensure_ascii=False)
-    )
-    return f"https://github.com/{GITHUB_REPO}/blob/main/{filename}"
-
-
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message: telebot.types.Message) -> None:
-    """Отправляет приветственное сообщение с инструкцией."""
-    welcome_text = (
-        "🌍 Я переводчик и анализатор текста\n\n"
-        "📌 Отправь текст на русском или английском\n"
-        "📊 Анализирую: оскорбления (abuse), темы (topics)"
-    )
-    bot.reply_to(message, welcome_text)
-
-
-@bot.message_handler(func=lambda message: True)
-def handle_message(message: telebot.types.Message) -> None:
-    """
-    Обрабатывает входящие текстовые сообщения.
-    Выполняет перевод, анализ и сохраняет результат в GitHub.
-    """
-    text = message.text
-
-    # Игнорируем команды
-    if text.startswith('/'):
-        return
-
-    bot.reply_to(message, "🔍 Анализ текста...")
-
-    try:
-        # Определяем направление перевода
-        if is_russian(text):
-            translated = translate_text(text, "en")
-            lang_info = "🇷🇺 Русский → 🇬🇧 Английский"
-            text_for_analysis = translated
-        else:
-            translated = translate_text(text, "ru")
-            lang_info = "🇬🇧 Английский → 🇷🇺 Русский"
-            text_for_analysis = text
-
-        # Анализируем текст
-        result = analyze_text(text_for_analysis)
-
-        # Сохраняем в GitHub
-        file_url = save_to_github(text, translated, result)
-
-        # Формируем ответ
-        abuse_count = len(result.get("abuse", []))
-        topics = result.get("topics", [])
-        topics_text = ", ".join(topics[:3]) if topics else "не найдено"
-
-        response_text = (
-            f"✅ Готово!\n\n"
-            f"{lang_info}\n\n"
-            f"📝 Оригинал: {text[:100]}\n"
-            f"🌐 Перевод: {translated[:100]}\n\n"
-            f"🚫 Оскорблений: {abuse_count}\n"
-            f"📚 Темы: {topics_text}\n\n"
-            f"📁 Отчёт: {file_url}"
-        )
-
-        bot.reply_to(message, response_text)
-
-    except requests.exceptions.RequestException as error:
-        error_msg = f"❌ Ошибка сети: {error}"
-        bot.reply_to(message, error_msg)
-    except Exception as error:  # pylint: disable=broad-exception-caught
-        # Ловим общие исключения для предотвращения падения бота
-        error_msg = f"❌ Непредвиденная ошибка: {error}"
-        bot.reply_to(message, error_msg)
+    def main(self) -> None:
+        """Заглушка для совместимости интерфейсов; реальный запуск бота обрабатывается внешне."""
+        # Этот метод намеренно ничего не делает, так как выполнение бота обрабатывается внешне
 
 
 def main() -> None:
-    """Запускает Telegram бота."""
-    print("🤖 Бот запущен...")
-    bot.infinity_polling()
+    """Точка входа для автономного запуска (обычно не используется)."""
+    # Заглушка для возможного автономного тестирования
+    print("Этот модуль предназначен для использования в составе бота")
 
 
 if __name__ == "__main__":
     main()
-    
