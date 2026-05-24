@@ -7,6 +7,7 @@ from telebot import types
 from telebot.callback_data import CallbackData
 from bot_func_abc import AtomicBotFunctionABC
 
+
 class AtomicJokeBotFunction(AtomicBotFunctionABC):
     """Реализация функции бота для получения шуток из Official Joke API."""
 
@@ -99,7 +100,6 @@ class AtomicJokeBotFunction(AtomicBotFunctionABC):
         """Отправляет сообщение для выбора типа шутки, получая типы из API."""
         joke_types = self._get_joke_types()
         if not joke_types:
-
             joke_types = ["general", "programming", "knock-knock", "dad"]
 
         markup = types.InlineKeyboardMarkup(row_width=2)
