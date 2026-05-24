@@ -22,7 +22,7 @@ class SpaceNewsBotFunction(AtomicBotFunctionABC):
     # Ваш логин на GitHub (укажите свой)
     authors: List[str] = ["your_github_username"]
     # Краткое описание функции
-    about: str = "Показывает последние новости космонавтики."
+    about: str = "Последние новости космонавтики"
     # Подробное описание, которое будет показано пользователю
     description: str = (
         "Используйте команду /space_news или /sn, "
