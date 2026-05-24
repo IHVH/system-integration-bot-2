@@ -15,7 +15,7 @@ class BibleBotFunction(AtomicBotFunctionABC):
 
     commands: List[str] = ["bible", "bib"]
     authors: List[str] = ["ymhhhhh"]
-    about: str = "Поиск библейских стихов через Bible API"
+    about: str = "Поиск библейских стихов"
     description: str = """
     Функция для поиска библейских стихов.
     Поддерживает навигацию по переводам, книгам, главам и стихам.
