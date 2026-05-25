@@ -17,7 +17,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
     """
 
     commands: List[str] = ["binaryjazz_genrenator"]
-    authors: List[str] = ["vova.shevchishin.03"]
+    authors: List[str] = ["vova.shevchishin"]
     about: str = "Генератор BinaryJazz"
     description: str = (
         "Функция работает с BinaryJazz Genrenator API. "
