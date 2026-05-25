@@ -12,8 +12,8 @@ from telebot.types import (
 
 from zeep import Client
 
-from src.bot_func_abc import (
-    AtomicBotFunctionABC,
+from bot_func_abc import (
+    AtomicBotFunctionABC
 )
 
 
@@ -50,27 +50,42 @@ class CountryInfoSoap(
         "CountryInfoService.wso?WSDL"
     )
 
-    def __init__(self, bot):
+    def __init__(self):
         """
         Инициализация SOAP клиента
         """
-
-        super().__init__(bot)
 
         self.client = Client(
             self.WSDL_URL
         )
 
-        self.bot.callback_query_handler(
+    def set_handlers(self, bot):
+        """
+        Регистрация handlers
+        """
+
+        @bot.message_handler(
+            commands=self.commands
+        )
+        def command_handler(message):
+            self.run(bot, message)
+
+        @bot.callback_query_handler(
             func=lambda call: (
                 call.data.startswith(
                     "country_"
                 )
             )
-        )(self.country_callback)
+        )
+        def callback_handler(call):
+            self.country_callback(
+                bot,
+                call
+            )
 
     def run(
         self,
+        bot,
         message: Message
     ):
         """
@@ -88,6 +103,7 @@ class CountryInfoSoap(
             )
 
             for country in countries[:20]:
+
                 markup.add(
                     InlineKeyboardButton(
                         text=country.sName,
@@ -98,7 +114,7 @@ class CountryInfoSoap(
                     )
                 )
 
-            self.bot.send_message(
+            bot.send_message(
                 message.chat.id,
                 "🌍 Выберите страну:",
                 reply_markup=markup
@@ -110,7 +126,7 @@ class CountryInfoSoap(
             TypeError
         ) as error:
 
-            self.bot.reply_to(
+            bot.reply_to(
                 message,
                 (
                     "Ошибка получения "
@@ -121,6 +137,7 @@ class CountryInfoSoap(
 
     def country_callback(
         self,
+        bot,
         call
     ):
         """
@@ -174,7 +191,7 @@ class CountryInfoSoap(
                 f"+{phone_code}"
             )
 
-            self.bot.send_message(
+            bot.send_message(
                 call.message.chat.id,
                 text
             )
@@ -185,7 +202,7 @@ class CountryInfoSoap(
             TypeError
         ) as error:
 
-            self.bot.send_message(
+            bot.send_message(
                 call.message.chat.id,
                 f"Ошибка:\n{error}"
             )

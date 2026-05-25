@@ -3,6 +3,11 @@
 import logging
 import sys
 import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from typing import List
 import telebot
 from telebot.callback_data import CallbackData
