@@ -7,3 +7,4 @@ requests
 yt-dlp
 imageio-ffmpeg
 Pillow
+zeep
