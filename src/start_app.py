@@ -18,6 +18,7 @@ class StartApp():
     _LOGLEVEL_ENV_KEY = "LOGLEVEL"
     _TBOT_LOGLEVEL_ENV_KEY = "TBOT_LOGLEVEL"
     _TBOTTOKEN_ENV_KEY = "TBOTTOKEN"
+    _TBOT_PROXY_ENV_KEY = "TBOT_PROXY"
 
     keyboard_factory: CallbackData
 
@@ -61,8 +62,21 @@ class StartApp():
         token = os.environ[self._TBOTTOKEN_ENV_KEY]
         log_level = self.__get_log_level(self._TBOT_LOGLEVEL_ENV_KEY)
         telebot.logger.setLevel(log_level)
+        self.__configure_proxy()
         new_bot = telebot.TeleBot(token, use_class_middlewares=True)
         return new_bot
+
+    def __configure_proxy(self):
+        """Configure bot proxy if TBOT_PROXY is set."""
+        proxy_url = os.environ.get(self._TBOT_PROXY_ENV_KEY)
+        if proxy_url:
+            telebot.apihelper.proxy = {
+                'http': proxy_url,
+                'https': proxy_url,
+            }
+            self.logger.info('Bot proxy configured: %s', proxy_url)
+        else:
+            self.logger.info('No bot proxy configured.')
 
     def __add_middleware(self):
         """Registering Middleware for Bot"""
