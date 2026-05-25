@@ -102,7 +102,7 @@ class CountryInfoSoap(
                 InlineKeyboardMarkup()
             )
 
-            for country in countries[:20]:
+            for country in countries:
 
                 markup.add(
                     InlineKeyboardButton(
