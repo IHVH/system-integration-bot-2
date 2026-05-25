@@ -15,7 +15,7 @@ class CountryInfoBotFunction(AtomicBotFunctionABC):
     # pylint: disable=too-few-public-methods
 
     commands: List[str] = ["country"]
-    authors: List[str] = ["GITHUB_ЛОГИН"]
+    authors: List[str] = ["lizikbusiness"]
 
     about: str = "Информация о стране"
 
