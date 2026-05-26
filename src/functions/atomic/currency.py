@@ -1,13 +1,16 @@
 """Модуль для получения курса валют"""
 
+import datetime
+import logging
 import os
 import typing
-import logging
-import datetime
+
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class CurrencyBotFunction(AtomicBotFunctionABC):
     """Модуль для получения актуального курса валют через Telegram-бота."""

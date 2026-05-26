@@ -1,7 +1,7 @@
 """Модуль для поиска информации о ip-адресе"""
 
-import os
 import logging
+import os
 from typing import List  # Стандартные библиотеки
 
 import requests

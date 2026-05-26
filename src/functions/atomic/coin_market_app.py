@@ -1,13 +1,15 @@
 """Module implementation of the atomic function for cryptocurrency market data using 
 CoinMarketCap API."""
 
-import os
 import logging
-from typing import List, Dict, Any
+import os
+from typing import Any, Dict, List
+
 import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

@@ -1,9 +1,11 @@
 """Module implement github API"""
 
 from typing import List
+
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

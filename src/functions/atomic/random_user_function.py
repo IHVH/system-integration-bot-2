@@ -3,12 +3,12 @@
 """Модуль реализации атомарной функции для генерации случайных пользователей."""
 
 import logging
-from typing import List, Dict, Any
-
+from typing import Any, Dict, List
 
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
 
 RANDOM_USER_API_URL = "https://randomuser.me/api/"

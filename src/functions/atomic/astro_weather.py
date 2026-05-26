@@ -4,11 +4,13 @@
 """
 
 from typing import Dict, Optional, Tuple
+
 import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
-from bot_func_abc import AtomicBotFunctionABC # pylint: disable=import-error
+
+from bot_func_abc import AtomicBotFunctionABC  # pylint: disable=import-error
 
 CITIES: Dict[str, Tuple[float, float]] = {
     "Москва": (55.7558, 37.6173),

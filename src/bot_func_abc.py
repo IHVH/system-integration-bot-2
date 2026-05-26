@@ -1,9 +1,11 @@
 """The module contains an abstract class from which
 the bot's atomic functions must be inherited."""
 
-from typing import List
 from abc import ABC, abstractmethod
+from typing import List
+
 import telebot
+
 
 class AtomicBotFunctionABC(ABC):
     """A class for describing the required fields and methods 

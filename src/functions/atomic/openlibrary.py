@@ -1,9 +1,10 @@
 """Module implementation of the atomic function of the telegram bot.
 Open Library API integration."""
 
-from typing import List, Dict, Optional
 import logging
 import time
+from typing import Dict, List, Optional
+
 import requests
 import telebot
 from telebot import types

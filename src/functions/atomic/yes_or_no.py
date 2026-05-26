@@ -1,10 +1,13 @@
 """Модуль, дающее свое мнение"""
 
 from typing import List
-import telebot
+
 import requests
+import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class AtomicExampleBotFunction(AtomicBotFunctionABC):
     """Модуль для получения двоичного ответа"""

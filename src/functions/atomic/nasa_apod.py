@@ -1,12 +1,14 @@
 """Module implementation of the atomic function for NASA's 
 Astronomy Picture of the Day (APOD) API and Earth API."""
 
-import os
 import logging
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List, Optional
+
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

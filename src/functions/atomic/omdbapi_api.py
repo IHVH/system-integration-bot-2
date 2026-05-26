@@ -2,9 +2,9 @@
 для поиска фильмов через OMDb API в Telegram-боте."""
 
 
-import os
 import logging
-from typing import List, Optional, Dict
+import os
+from typing import Dict, List, Optional
 
 import requests
 import telebot

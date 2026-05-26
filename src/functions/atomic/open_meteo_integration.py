@@ -1,7 +1,7 @@
 """Module implementation of the atomic function of the telegram bot. Weather API integration."""
 
-from typing import List
 import logging
+from typing import List
 
 import requests
 import telebot

@@ -4,17 +4,10 @@
 
 from typing import List
 
-from telebot.types import (
-    Message,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
-
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from zeep import Client
 
-from bot_func_abc import (
-    AtomicBotFunctionABC
-)
+from bot_func_abc import AtomicBotFunctionABC
 
 
 class CountryInfoSoap(

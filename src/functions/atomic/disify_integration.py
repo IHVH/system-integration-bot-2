@@ -1,10 +1,13 @@
 """Module implementation of the atomic function of the telegram bot: DisifyIntegrationFunction"""
 
 from typing import List
+
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class DisifyIntegrationFunction(AtomicBotFunctionABC):
     """Atomic function for checking email information via the Disify API"""

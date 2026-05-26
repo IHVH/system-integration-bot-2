@@ -1,9 +1,11 @@
 """The module contains tests for checking atomic functions"""
 
 import unittest
+
+from app import _START_COMANDS
 from bot_func_abc import AtomicBotFunctionABC
 from load_atomic import load_atomic_functions
-from app import _START_COMANDS
+
 
 class TestTeleBot(unittest.TestCase):
     """Unittest test telebot atomic functions"""

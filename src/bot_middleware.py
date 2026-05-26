@@ -1,11 +1,14 @@
 """Module implements pre-process and post-process processing of incoming messages"""
 
-import os
 import logging
+import os
+
 import telebot
 from telebot.handler_backends import BaseMiddleware
+
+from db.models_msg_log import Chat, Message, User
 from db.storage_worker import StorageWorker
-from db.models_msg_log import User, Chat, Message
+
 
 class Middleware(BaseMiddleware):
     """Pre-process and post-process processing of incoming messages"""

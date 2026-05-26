@@ -3,8 +3,11 @@ sqlalchemy.orm DeclarativeBase for describing tables"""
 
 import dataclasses
 from datetime import datetime
-from sqlalchemy import Boolean, Integer, String, Column, DateTime, ForeignKey, BigInteger
-from sqlalchemy.orm import relationship, DeclarativeBase
+
+from sqlalchemy import (BigInteger, Boolean, Column, DateTime, ForeignKey,
+                        Integer, String)
+from sqlalchemy.orm import DeclarativeBase, relationship
+
 
 @dataclasses.dataclass
 class Base(DeclarativeBase):
