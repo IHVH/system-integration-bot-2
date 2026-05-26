@@ -3,13 +3,9 @@
 import logging
 import os
 import sys
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from typing import List
 
+from dotenv import load_dotenv
 import telebot
 from telebot.callback_data import CallbackData
 
@@ -18,6 +14,8 @@ from bot_func_abc import AtomicBotFunctionABC
 from bot_middleware import Middleware
 from functions.defoult_bot_function import DefoultBotFunction
 from load_atomic import load_atomic_functions
+
+load_dotenv()
 
 
 class StartApp():
