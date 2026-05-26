@@ -105,7 +105,6 @@ class ColorPaletteBotFunction(AtomicBotFunctionABC):
         palette_id = palette.get("id", "—")
 
         created = self.__format_date(created_raw)
-        color_blocks = "  ".join(colors)
         color_hex = "\n".join(f"  `{c}`" for c in colors)
         tags_str = ", ".join(tags) if tags else "—"
         preview_url = f"https://colormagic.app/palette/{palette_id}"
@@ -114,7 +113,7 @@ class ColorPaletteBotFunction(AtomicBotFunctionABC):
             f"🎨 *{name}*  ({index + 1}/{total})\n"
             f"Запрос: `{query}`\n\n"
             f"*Цвета:*\n{color_hex}\n\n"
-            f"{color_blocks}\n\n"
+            f"{'  '.join(colors)}\n\n"
             f"🏷 *Теги:* {tags_str}\n"
             f"❤️ *Лайки:* {likes}\n"
             f"📅 *Добавлена:* {created}\n"
