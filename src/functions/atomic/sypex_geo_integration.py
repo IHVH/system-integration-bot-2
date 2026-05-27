@@ -12,10 +12,12 @@ class IPInfoFunction(AtomicBotFunctionABC):
 
     commands: List[str] = ["ip_info"]
     authors: List[str] = ["Speedware"]
-    about: str = "Информация по IP через sypexgeo.net"
+    about: str = "Информация по IP"
     description: str = (
-        "Получение информации по IP адресу.\n"
-        "Пример команды: /ip_info 8.8.8.8"
+    "Получение подробной информации по IP адресу через сервис "
+    "sypexgeo.net. Команда позволяет определить страну, город, "
+    "провайдера и другие сетевые данные для указанного IP адреса. "
+    "Пример команды: /ip_info 8.8.8.8"
     )
     state: bool = True
 
