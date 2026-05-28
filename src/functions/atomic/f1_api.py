@@ -4,6 +4,7 @@ import io
 import logging
 import re
 from datetime import datetime
+from typing import List
 
 import matplotlib
 
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 import requests
 import telebot
 from telebot import types
+from telebot.callback_data import CallbackData
 from bot_func_abc import AtomicBotFunctionABC
 
 def _lap_time_to_seconds(raw: str) -> float | None:
@@ -33,8 +35,8 @@ def _lap_time_to_seconds(raw: str) -> float | None:
 class F1ApiBotFunction(AtomicBotFunctionABC):
     """Модуль для получения результатов выбранного сезона Формула 1."""
 
-    commands: list[str] = ["f1"]
-    authors: list[str] = ["sidorovt"]
+    commands: List[str] = ["f1"]
+    authors: List[str] = ["sidorovt"]
     about: str = "Результаты сезонов Формула 1"
     description: str = (
         "Показывает результаты сезона Формула 1. "
@@ -42,11 +44,13 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
     )
     state: bool = True
     bot: telebot.TeleBot
+    race_callback_factory: CallbackData
     logger: logging.Logger
     api_url: str = "https://api.jolpi.ca/ergast/f1"
     _driver_ref_pattern: re.Pattern[str] = re.compile(r"^[a-z][a-z0-9_]*$")
 
     def __init__(self):
+        self.commands = ["f1"]
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         handler = logging.StreamHandler()
@@ -139,18 +143,24 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
         """Метод для обработки сообщений пользователя."""
 
         self.bot = bot
-        self.logger.info("Setting handlers for /f1")
+        self.race_callback_factory = CallbackData(
+            "season", "round", prefix=self.commands[0]
+        )
+        self.logger.info("Setting handlers for /%s", self.commands[0])
         max_year = datetime.now().year
+        cmd = self.commands[0]
 
-        @bot.message_handler(commands=["f1"])
+        @bot.message_handler(commands=[self.commands[0]])
         def get_season(message: types.Message):
-            self.logger.info("Command /f1 triggered by user %s", message.from_user.username)
+            self.logger.info(
+                "Command /%s triggered by user %s", cmd, message.from_user.username
+            )
 
             parts = message.text.split()
             if len(parts) < 2:
                 bot.send_message(
                     message.chat.id,
-                    "Укажите год интересующего вас сезона, например /f1 2026",
+                    f"Укажите год интересующего вас сезона, например /{cmd} 2026",
                 )
                 return
 
@@ -161,7 +171,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                     message.chat.id,
                     (
                         f"❌ Некорректный год. Укажите год от 1950 до {max_year}, "
-                        f"например: /f1 {max_year}"
+                        f"например: /{cmd} {max_year}"
                     ),
                 )
                 return
@@ -171,7 +181,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                     message.chat.id,
                     (
                         f"❌ Некорректный год. Укажите год от 1950 до {max_year}, "
-                        f"например: /f1 {max_year}"
+                        f"например: /{cmd} {max_year}"
                     ),
                 )
                 return
@@ -197,16 +207,22 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                 race_name = race.get("raceName", "Неизвестная гонка")
                 date = race.get("date", "Дата неизвестна")
                 label = f"Этап {round_num}: {race_name} ({date})"
-                callback_data = f"f1_race_{season}_{round_num}"
+                callback_data = self.race_callback_factory.new(
+                    season=season, round=str(round_num)
+                )
                 markup.add(types.InlineKeyboardButton(label, callback_data=callback_data))
 
             bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=markup)
 
-        @bot.callback_query_handler(func=lambda call: call.data.startswith("f1_race_"))
+        @bot.callback_query_handler(
+            func=None, config=self.race_callback_factory.filter()
+        )
         def handle_race_selection(call: types.CallbackQuery):
             """Метод для обработки выбора гонки и вывода результата."""
 
-            _, _, season, round_num = call.data.split("_", 3)
+            parsed = self.race_callback_factory.parse(call.data)
+            season = parsed["season"]
+            round_num = parsed["round"]
 
             bot.answer_callback_query(call.id, f"Загружаю результаты этапа {round_num}...")
 
@@ -278,7 +294,7 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
             if not ctx:
                 bot.send_message(
                     message.chat.id,
-                    "Сначала выберите гонку через /f1 и кнопку этапа.",
+                    f"Сначала выберите гонку через /{cmd} и кнопку этапа.",
                 )
                 return
 
@@ -502,3 +518,4 @@ class F1ApiBotFunction(AtomicBotFunctionABC):
                 e,
             )
             return None
+

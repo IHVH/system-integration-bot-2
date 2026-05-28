@@ -4,4 +4,7 @@ sqlalchemy
 sqlalchemy-utils
 pylint
 requests
+yt-dlp
+imageio-ffmpeg
+Pillow
 matplotlib
