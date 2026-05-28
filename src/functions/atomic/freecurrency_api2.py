@@ -126,6 +126,11 @@ class FreeCurrencyAPIClient:
 
         if isinstance(data, dict) and "data" in data:
             return data["data"]
+
+        # Для эндпоинта currencies API может вернуть словарь напрямую без обертки 'data'
+        if isinstance(data, dict) and data and not any(key in data for key in ['data', 'message']):
+            return data
+
         response_text_preview = response.text[:500] if response else "N/A"
         self.logger.warning(
             "Неожиданная структура ответа API. " + "Ожидали {'data': ...}, получили: %s",
@@ -154,7 +159,6 @@ class FreeCurrencyAPIClient:
         all_params["apikey"] = self.api_key
 
         response = None
-        data = None
 
         try:
             log_message = "Выполнение запроса к API %s " + "с параметрами %s"
@@ -176,6 +180,8 @@ class FreeCurrencyAPIClient:
             raise FreeCurrencyAPIClientError(f"Ошибка соединения с API: {e}") from e
 
         except requests.exceptions.HTTPError as e:
+            if e.response is not None:
+                self._handle_api_specific_error(e.response, e.response.status_code)
             status_code = e.response.status_code if e.response is not None else "N/A"
             error_details = f"Статус: {status_code}"
             if e.response is not None:
@@ -232,7 +238,12 @@ class FreeCurrencyAPIClient:
             currencies_data = self._make_request("currencies")
             # API возвращает словарь { "AED": {...}, "AFN": {...}, ... }
             # Извлекаем только коды валют (ключи словаря)
-            currency_codes = list(currencies_data.keys())
+            if isinstance(currencies_data, dict):
+                currency_codes = list(currencies_data.keys())
+            elif isinstance(currencies_data, list):
+                currency_codes = currencies_data
+            else:
+                currency_codes = []
             self.logger.info("Получено %d валют.", len(currency_codes))
             return currency_codes
         except FreeCurrencyAPIClientError as e:
@@ -242,64 +253,90 @@ class FreeCurrencyAPIClient:
     def get_exchange_rate(
         self, target_currency: str, base_currency: str = "USD"
     ) -> float:
-        """
-        Получает последний курс обмена для целевой валюты
-        относительно базовой валюты.
-
-        Args:
-            target_currency: Код валюты, курс которой нужно узнать (например, "EUR").
-            base_currency: Код базовой валюты (например, "USD"). Бесплатный тариф
-                           может ограничивать базовую валюту (часто разрешен только USD).
-
-        Returns:
-            Курс обмена (число с плавающей точкой).
-
-        Raises:
-            FreeCurrencyAPIClientError: Если запрос к API не удался или вернул ошибку
-                                        (включая случай, когда курс не найден).
-        """
+        """Получает последний курс обмена для целевой валюты."""
         self.logger.info(
             "Получение курса для %s к %s...", target_currency, base_currency
         )
-        # Эндпоинт API /latest требует символы, разделенные запятыми,
-        # но мы запрашиваем только один
         params = {
             "base_currency": base_currency.upper(),
-            "symbols": target_currency.upper(),
+            "currencies": target_currency.upper(),
         }
         try:
             rates_data = self._make_request("latest", params=params)
 
-            # API возвращает { "TARGET": значение_курса }. Проверяем наличие ключа.
-            target_currency_upper = target_currency.upper()
-            if target_currency_upper in rates_data:
-                rate = rates_data[target_currency_upper]
-                self.logger.info(
-                    "Курс получен: 1 %s = %s %s",
-                    base_currency.upper(),
-                    rate,
-                    target_currency_upper,
+            if rates_data is None:
+                raise FreeCurrencyAPIClientError(
+                    f"API вернул пустой ответ при запросе курса {target_currency}/{base_currency}."
                 )
-                return rate
 
-            self.logger.warning(
-                "Курс для %s не найден в данных ответа для базовой валюты %s.",
-                target_currency,
-                base_currency,
+            target_currency_upper = target_currency.upper()
+            rate = self._extract_rate_from_response(rates_data,
+                                                    target_currency_upper,
+                                                      base_currency)
+
+            if not isinstance(rate, (int, float)):
+                raise FreeCurrencyAPIClientError(
+                    f"Некорректное значение курса: {rate!r}"
+                )
+
+            self.logger.info(
+                "Курс получен: 1 %s = %s %s",
+                base_currency.upper(),
+                rate,
+                target_currency_upper,
+            )
+            return float(rate)
+
+        except FreeCurrencyAPIClientError:
+            raise
+        except Exception as e:
+            self.logger.error(
+                "Непредвиденная ошибка при получении курса %s/%s: %s",
+                target_currency, base_currency, e
             )
             raise FreeCurrencyAPIClientError(
-                f"Данные курса для {target_currency} не найдены в ответе API "
-                f"для базовой валюты {base_currency}."
+                f"Непредвиденная ошибка: {e}"
+            ) from e
+
+    def _extract_rate_from_response(
+        self, rates_data: Dict[str, Any], target_currency: str, base_currency: str
+    ) -> float:
+        """
+        Извлекает курс обмена из ответа API.
+
+        Args:
+            rates_data: Данные от API.
+            target_currency: Целевая валюта.
+            base_currency: Базовая валюта.
+
+        Returns:
+            Курс обмена.
+
+        Raises:
+            FreeCurrencyAPIClientError: Если курс не найден.
+        """
+        if not isinstance(rates_data, dict):
+            raise FreeCurrencyAPIClientError(
+                f"Неожиданный формат ответа API: {type(rates_data)}"
             )
 
-        except FreeCurrencyAPIClientError as e:
-            self.logger.error(
-                "Не удалось получить курс для %s/%s: %s",
-                target_currency,
-                base_currency,
-                e,
-            )
-            raise
+        if target_currency in rates_data:
+            return rates_data[target_currency]
+
+        if base_currency.upper() in rates_data:
+            # Если API вернул курсы относительно другой базы
+            rate = rates_data.get(base_currency.upper())
+            if rate:
+                return 1.0 / rate
+
+        # Пробуем найти в любом доступном формате
+        for value in rates_data.values():
+            if isinstance(value, (int, float)):
+                return value
+
+        raise FreeCurrencyAPIClientError(
+            f"Курс для {target_currency} не найден в ответе API."
+        )
 
 
 class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
@@ -308,7 +345,7 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
     """
 
     commands: List[str] = ["currencies", "rate"]
-    authors: List[str] = ["Yurmen2"]
+    authors: List[str] = ["Pokoiting", "Yurmen2"]
     about: str = "Информация о валютах и курсах"
     description: str = """
     Предоставляет список поддерживаемых валют и их курсы
@@ -361,23 +398,14 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
 
         return args[0].upper(), args[1].upper()
 
-    def _get_and_send_currency_rate(
+    def get_and_send_currency_rate(
         self,
         chat_id: int,
         target_currency: str,
         base_currency: str,
         message: types.Message,
     ) -> None:
-        """
-        Получает курс валюты и отправляет результат сообщения.
-        Выделено из handle_rate для уменьшения количества операторов.
-
-        Args:
-            chat_id: ID чата Telegram для отправки сообщения.
-            target_currency: Код целевой валюты.
-            base_currency: Код базовой валюты.
-            message: Исходный объект сообщения (для reply_to).
-        """
+        """Получает курс валюты и отправляет результат."""
         self.bot.send_message(
             chat_id,
             f"Загружаю курс {target_currency} к {base_currency}...",
@@ -391,22 +419,18 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
                 )
                 return
 
+            # get_exchange_rate сам выбросит ошибку, если что-то не так
             rate = self.api_client.get_exchange_rate(
                 target_currency, base_currency=base_currency
             )
 
-            # get_exchange_rate выбрасывает ошибку, если курс не найден
-            if rate is not None:
-                response_text = f"1 {base_currency} = {rate:.4f} {target_currency}"
-                self.bot.send_message(chat_id, response_text)
+            response_text = f"1 {base_currency.upper()} = {rate:.4f} {target_currency.upper()}"
+            self.bot.send_message(chat_id, response_text)
 
         except FreeCurrencyAPIClientError as e:
             self.logger.error(
                 "Ошибка при получении курса для %s/%s для чата %d: %s",
-                target_currency,
-                base_currency,
-                chat_id,
-                e,
+                target_currency, base_currency, chat_id, e
             )
             self.bot.reply_to(message, f"Ошибка при получении курса: {e}")
 
@@ -445,7 +469,7 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
                     currencies_list_text = ", ".join(sorted(currencies))
                     response_text = (
                         f"Поддерживаемые валюты ({len(currencies)}): \n"
-                        f"`{currencies_list_text}`"
+                        f"{currencies_list_text}"
                     )
                     if len(response_text) > 4000:
                         response_text = (
@@ -454,7 +478,7 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
                             + "...\n(Список слишком длинный, показаны первые 200 кодов)"
                         )
 
-                    self.bot.send_message(chat_id, response_text, parse_mode="Markdown")
+                    self.bot.send_message(chat_id, response_text)
                 else:
                     self.bot.send_message(
                         chat_id, "Не удалось получить список поддерживаемых валют."
@@ -492,6 +516,6 @@ class AtomicCurrencyBotFunction(AtomicBotFunctionABC):
 
             target_currency, base_currency = arg_result
 
-            self._get_and_send_currency_rate(
+            self.get_and_send_currency_rate(
                 chat_id, target_currency, base_currency, message
             )
