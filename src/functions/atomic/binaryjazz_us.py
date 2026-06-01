@@ -1,23 +1,20 @@
-"""
-Модуль функции Telegram-бота для BinaryJazz Genrenator API.
-"""
+"""Модуль функции Telegram-бота для BinaryJazz Genrenator API."""
 
 from typing import Any, Dict, List
 
 import requests
 import telebot
 from telebot import types
+from telebot.callback_data import CallbackData
 
 from bot_func_abc import AtomicBotFunctionABC
 
 
 class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
-    """
-    Функция Telegram-бота для работы с BinaryJazz Genrenator API.
-    """
+    """Функция Telegram-бота для работы с BinaryJazz Genrenator API."""
 
     commands: List[str] = ["binaryjazz_genrenator"]
-    authors: List[str] = ["vova.shevchishin"]
+    authors: List[str] = ["meteor630"]
     about: str = "Генератор BinaryJazz"
     description: str = (
         "Функция работает с BinaryJazz Genrenator API. "
@@ -28,26 +25,39 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
 
     API_URL = "https://binaryjazz.us/wp-json/genrenator/v1"
 
+    actions: List[str] = ["genre", "story"]
+
+    def __init__(self):
+        self.app_part = "binaryjazz_button"
+        self.keyboard_factory = CallbackData(
+            self.app_part,
+            "func_index",
+            prefix=self.commands[0],
+        )
+
     def set_handlers(self, bot: telebot.TeleBot) -> None:
-        """
-        Установка обработчиков Telegram-бота.
-        """
+        """Установка обработчиков Telegram-бота."""
 
         @bot.message_handler(commands=self.commands)
         def start_handler(message: types.Message) -> None:
-            """
-            Показать главное меню BinaryJazz.
-            """
+            """Показать главное меню BinaryJazz."""
+
             keyboard = types.InlineKeyboardMarkup()
 
             genre_button = types.InlineKeyboardButton(
                 text="🎵 Сгенерировать жанр",
-                callback_data="binaryjazz_genre",
+                callback_data=self.keyboard_factory.new(
+                    binaryjazz_button=self.actions[0],
+                    func_index=0,
+                ),
             )
 
             story_button = types.InlineKeyboardButton(
                 text="📝 Сгенерировать текст",
-                callback_data="binaryjazz_story",
+                callback_data=self.keyboard_factory.new(
+                    binaryjazz_button=self.actions[1],
+                    func_index=1,
+                ),
             )
 
             keyboard.add(genre_button)
@@ -60,12 +70,24 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
             )
 
         @bot.callback_query_handler(
-            func=lambda call: call.data == "binaryjazz_genre"
+            func=None,
+            config=self.keyboard_factory.filter(),
         )
+        def binaryjazz_callback(call: types.CallbackQuery) -> None:
+            """Обработка кнопок BinaryJazz."""
+
+            callback_data = self.keyboard_factory.parse(callback_data=call.data)
+            action_index = int(callback_data["func_index"])
+            action = self.actions[action_index]
+
+            if action == "genre":
+                genre_callback(call)
+
+            if action == "story":
+                story_callback(call)
+
         def genre_callback(call: types.CallbackQuery) -> None:
-            """
-            Генерация случайного жанра.
-            """
+            """Генерация случайного жанра."""
             try:
                 genre = self._get_genre()
 
@@ -80,13 +102,8 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
                     f"Ошибка при запросе к API: {error}",
                 )
 
-        @bot.callback_query_handler(
-            func=lambda call: call.data == "binaryjazz_story"
-        )
         def story_callback(call: types.CallbackQuery) -> None:
-            """
-            Запрос количества текстов.
-            """
+            """Запрос количества текстов."""
             msg = bot.send_message(
                 call.message.chat.id,
                 "Введите количество текстов от 1 до 10:",
@@ -98,9 +115,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
             )
 
         def process_story_count(message: types.Message) -> None:
-            """
-            Генерация текстов.
-            """
+            """Генерация текстов."""
             try:
                 count = int(message.text)
 
@@ -132,9 +147,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
 
     @classmethod
     def _get_genre(cls) -> str:
-        """
-        Получить случайный музыкальный жанр.
-        """
+        """Получить случайный музыкальный жанр."""
         response = requests.get(f"{cls.API_URL}/genre/", timeout=10)
         response.raise_for_status()
 
@@ -142,9 +155,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
 
     @classmethod
     def _get_stories(cls, count: int) -> List[str]:
-        """
-        Получить список сгенерированных текстов.
-        """
+        """Получить список сгенерированных текстов."""
         response = requests.get(f"{cls.API_URL}/story/{count}/", timeout=10)
         response.raise_for_status()
 
@@ -157,9 +168,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
 
     @staticmethod
     def _format_stories(stories: List[str]) -> str:
-        """
-        Отформатировать список сгенерированных текстов.
-        """
+        """Отформатировать список сгенерированных текстов."""
         if not stories:
             return "Тексты не найдены."
 
@@ -171,9 +180,7 @@ class BinaryJazzGenrenatorFunction(AtomicBotFunctionABC):
         return "\n\n".join(result)
 
     def get_info(self) -> Dict[str, Any]:
-        """
-        Получить информацию о функции.
-        """
+        """Получить информацию о функции."""
         return {
             "commands": self.commands,
             "authors": self.authors,
