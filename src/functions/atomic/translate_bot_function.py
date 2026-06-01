@@ -15,7 +15,7 @@ class TranslateBotFunction(AtomicBotFunctionABC):
     """
 
     commands = ["translate"]
-    authors = ["Adapted"]
+    authors = ["shiroyashinu"]
     about = "Перевод и анализ текста"
     description = (
         "Отправь любой текст на русском или английском, и бот вернёт перевод,\n"
