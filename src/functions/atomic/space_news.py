@@ -19,8 +19,8 @@ class SpaceNewsBotFunction(AtomicBotFunctionABC):
     """
     # Список команд, на которые будет реагировать эта функция
     commands: List[str] = ["space_news", "sn"]
-    # Ваш логин на GitHub (укажите свой)
-    authors: List[str] = ["your_github_username"]
+    #Логин на GitHub
+    authors: List[str] = ["PUZOGRUD"]
     # Краткое описание функции
     about: str = "Последние новости космонавтики"
     # Подробное описание, которое будет показано пользователю
