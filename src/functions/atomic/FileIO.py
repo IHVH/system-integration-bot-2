@@ -4,17 +4,14 @@ import requests
 import telebot
 from telebot import types
 
-# Импортируем абстрактный класс. 
-# ПРИМЕЧАНИЕ: Измените путь импорта, если в вашем проекте ABC-класс лежит в другом месте.
 from src.functions.atomic.abc import AtomicBotFunctionABC
-
 
 class FileIoFunction(AtomicBotFunctionABC):
     # ==========================================
     # ОБЯЗАТЕЛЬНЫЕ АТРИБУТЫ ФРЕЙМВОРКА
     # ==========================================
     commands: List[str] = ["fileio", "file"]
-    authors: List[str] = ["твой_логин_на_github"]
+    authors: List[str] = ["MuertoTheDeath"]
     about: str = "Загрузка и скачивание файлов через сервис file.io."
     description: str = (
         "Позволяет загрузить любой документ в облако file.io с ограничением по времени жизни, "
@@ -24,18 +21,13 @@ class FileIoFunction(AtomicBotFunctionABC):
     state: bool = True
 
     def __init__(self):
-        # Временное хранилище для состояний пользователей внутри этого класса
+
         self.user_data = {}
 
     # ==========================================
     # ОСНОВНОЙ МЕТОД ВХОДА (РЕАЛИЗАЦИЯ ABC)
     # ==========================================
     def handle(self, message: types.Message, bot: telebot.TeleBot):
-        """
-        Этот метод автоматически вызывается фреймворком, когда пользователь пишет /fileio.
-        Обратите внимание: если в вашем AtomicBotFunctionABC метод называется иначе 
-        (например, execute или run), просто переименуйте его сюда.
-        """
         chat_id = message.chat.id
         
         text = (
@@ -45,7 +37,7 @@ class FileIoFunction(AtomicBotFunctionABC):
         )
         msg = bot.send_message(chat_id, text, parse_mode="Markdown")
         
-        # Регистрируем следующий шаг: ожидаем от пользователя либо файл, либо ссылку
+
         bot.register_next_step_handler(msg, self._process_user_input, bot)
 
     # ==========================================
@@ -132,9 +124,7 @@ class FileIoFunction(AtomicBotFunctionABC):
 
         self.user_data.pop(chat_id, None)
 
-    # ==========================================
-    # СЕРВИСНЫЕ МЕТОДЫ ДЛЯ РАБОТЫ С API FILE.IO
-    # ==========================================
+
     def _upload_to_fileio(self, file_bytes: bytes, file_name: str, expires: str) -> getattr:
         url = "https://file.io"
         files = {"file": (file_name, file_bytes)}
