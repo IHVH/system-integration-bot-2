@@ -32,7 +32,7 @@ class IPInfoFunction(AtomicBotFunctionABC):
         """
         self.bot = bot
 
-        @bot.message_handler(commands=["ip_info"])
+        @bot.message_handler(commands=self.commands)
         def ip_info_handler(message: types.Message):
             args = message.text.strip().split()
 
