@@ -33,6 +33,8 @@ Links to information about tokens
 
 [FREE_CURRENCY_API_KEY](https://freecurrencyapi.com/)
 
+[TISANE_API_KEY](https://tisane.ai/)
+
 ```
 LOGLEVEL=ERROR
 TBOT_LOGLEVEL=ERROR
@@ -48,6 +50,7 @@ MOTIVATION_API_KEY= <your_free_motivation_api_key>
 EXCHANGE_RATE_API_KEY= 
 NASA_API_KEY=<your_nasa_api_key>
 FREE_CURRENCY_API_KEY=
+TISANE_API_KEY=
 
 ```
 
