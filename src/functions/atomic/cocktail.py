@@ -4,24 +4,11 @@ import requests
 import telebot
 from telebot import types
 
-try:
-    from bot_func_abc import AtomicBotFunctionABC
-except ImportError:
-    class AtomicBotFunctionABC:  # pylint: disable=R0903
-        commands: List[str] = []
-        authors: List[str] = []
-        about: str = ""
-        description: str = ""
-        state: bool = True
-
-        def set_handlers(self, bot):
-            _ = bot 
-
 
 logger = logging.getLogger(__name__)
 
 
-class CocktailSearchBotFunction(AtomicBotFunctionABC):
+class CocktailSearchBotFunction:
 
     commands: List[str] = ["cocktail"]
     authors: List[str] = ["ILENTI"]
