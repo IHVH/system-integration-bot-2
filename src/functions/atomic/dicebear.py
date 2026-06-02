@@ -38,7 +38,7 @@ STYLES: Final[dict[str, str]] = {
 class DiceBearAvatarBotFunction(AtomicBotFunctionABC):
     """Функция Telegram-бота для генерации аватаров через DiceBear API."""
 
-    commands: List[str] = ["avatar", "dicebear"]
+    commands: List[str] = ["dicebear"]
     authors: List[str] = ["solitudo66"]
     about: str = "Генератор аватаров DiceBear"
     description: str = (
