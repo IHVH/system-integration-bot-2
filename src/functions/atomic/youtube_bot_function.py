@@ -8,13 +8,13 @@ from typing import List
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
 
-
 try:
+    import imageio_ffmpeg
     import yt_dlp
     from yt_dlp.utils import DownloadError
-    import imageio_ffmpeg
 except ImportError as exc:
     raise ImportError("yt-dlp or imageio_ffmpeg is required: pip install yt-dlp") from exc
 

@@ -1,11 +1,14 @@
 """Module for creating qr codes"""
 
-from typing import List
 from io import BytesIO
-import telebot
+from typing import List
+
 import requests
+import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class QRBotFunction(AtomicBotFunctionABC):
     """Function work with qrtag api"""

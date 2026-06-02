@@ -3,13 +3,14 @@
 для взаимодействия с FreeCurrencyAPI.
 """
 
-import os
 import logging
-from typing import List, Optional, Dict, Any, Tuple
+import os
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

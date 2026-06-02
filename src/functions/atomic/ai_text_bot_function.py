@@ -1,6 +1,6 @@
 """Модуль с функцией генерации текста через нейросеть Pollinations."""
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 from urllib.parse import quote
 
 import requests

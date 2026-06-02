@@ -1,10 +1,12 @@
 """Модуль, присылающий цитаты"""
 
 from typing import List
+
 import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

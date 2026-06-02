@@ -1,10 +1,12 @@
 """Модуль с функцией для вывода случайных фактов с использованием API."""
 
-from typing import List
 import json
+from typing import List
+
 import requests
 from requests.exceptions import RequestException
 from telebot.types import Message
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

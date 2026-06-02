@@ -1,11 +1,14 @@
 """Модуль для работы с ISO-кодами стран и их административными единицами."""
 
 from typing import List
+
 import requests
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class CountryCodesBot(AtomicBotFunctionABC):
     """Класс для получения ISO-кодов стран и их административных единиц."""

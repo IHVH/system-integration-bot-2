@@ -1,10 +1,13 @@
 """The module contains the implementation of methods for working with the database"""
 
 from typing import List
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy_utils import database_exists, create_database
-from db.models_msg_log import Base, User, Chat, Message
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy_utils import create_database, database_exists
+
+from db.models_msg_log import Base, Chat, Message, User
+
 
 class StorageWorker:
     """Database operations"""

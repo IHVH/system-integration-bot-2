@@ -1,16 +1,22 @@
 """Application setup and configuration"""
 
 import logging
-import sys
 import os
+import sys
 from typing import List
+
+from dotenv import load_dotenv
 import telebot
 from telebot.callback_data import CallbackData
-from load_atomic import load_atomic_functions
-from bot_middleware import Middleware
+
 from bot_callback_filter import BotCallbackCustomFilter
 from bot_func_abc import AtomicBotFunctionABC
+from bot_middleware import Middleware
 from functions.defoult_bot_function import DefoultBotFunction
+from load_atomic import load_atomic_functions
+
+load_dotenv()
+
 
 class StartApp():
     """Configuring and running the application"""

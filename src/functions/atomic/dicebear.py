@@ -9,11 +9,10 @@ from urllib.parse import urlencode
 
 import requests
 import telebot
-
 from telebot import types
 from telebot.callback_data import CallbackData
-from bot_func_abc import AtomicBotFunctionABC
 
+from bot_func_abc import AtomicBotFunctionABC
 
 DICEBEAR_API_URL: Final[str] = "https://api.dicebear.com/9.x"
 AVATAR_FORMAT: Final[str] = "png"

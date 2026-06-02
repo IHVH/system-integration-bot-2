@@ -4,9 +4,12 @@
 """
 
 import os
+
 import requests
 import telebot
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class WeatherBotFunction(AtomicBotFunctionABC):
     """Модуль для получения текущей погоды через Telegram-бота."""

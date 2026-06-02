@@ -2,11 +2,13 @@
 
 import logging
 import random
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import requests
 import telebot
 from telebot import types as telebot_types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

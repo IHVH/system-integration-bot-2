@@ -1,12 +1,15 @@
 """Module implementation of the atomic function of the telegram bot. Example of implementation."""
 
-import os
 import logging
+import os
 from typing import List
+
 import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 class AtomicExampleBotFunction(AtomicBotFunctionABC):
     """Example of implementation of atomic function

@@ -4,14 +4,12 @@ import io
 from typing import Dict, List, Optional, Tuple
 
 import requests
-from PIL import Image, ImageDraw, ImageFont
-
 import telebot
+from PIL import Image, ImageDraw, ImageFont
 from telebot import types
 from telebot.callback_data import CallbackData
 
 from bot_func_abc import AtomicBotFunctionABC  # pylint: disable=import-error
-
 
 _API_URL = "https://avatar.oxro.io/avatar.svg"
 

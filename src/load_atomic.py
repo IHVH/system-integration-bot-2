@@ -4,7 +4,9 @@ import inspect
 import os
 from pathlib import Path
 from typing import List
+
 from bot_func_abc import AtomicBotFunctionABC
+
 
 def load_atomic_functions(func_dir:str = "functions",
 atomic_dir:str = "atomic") -> List[AtomicBotFunctionABC]:

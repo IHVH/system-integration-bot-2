@@ -1,10 +1,10 @@
 """Module implementation of the atomic function of the telegram bot.
 English word generator integration."""
 
-from typing import List
-import logging
-
 import json
+import logging
+from typing import List
+
 import requests
 import telebot
 from telebot import types

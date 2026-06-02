@@ -1,11 +1,13 @@
 """Модуль для команды /motivate: отправляет случайную мотивационную цитату через API Ninjas."""
 
-from typing import List
-import os
 import logging
+import os
+from typing import List
+
 import requests
 import telebot
 from telebot import types
+
 from bot_func_abc import AtomicBotFunctionABC
 
 

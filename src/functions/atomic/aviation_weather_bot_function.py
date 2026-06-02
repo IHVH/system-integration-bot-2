@@ -2,7 +2,7 @@
 Module for aviation weather bot function.
 """
 
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 import requests
 import telebot

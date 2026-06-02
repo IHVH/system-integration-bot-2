@@ -2,14 +2,15 @@
 Модуль для реализации функции бота для получения интересных фактов о собаках.
 """
 
-from typing import List
 import logging
-import telebot
+from typing import List
+
 import requests
+import telebot
 from telebot import types
 from telebot.callback_data import CallbackData
-from bot_func_abc import AtomicBotFunctionABC
 
+from bot_func_abc import AtomicBotFunctionABC
 
 
 class DogFactBotFunction(AtomicBotFunctionABC):

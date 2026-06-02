@@ -1,14 +1,13 @@
 """Module implementation of the atomic function of the telegram bot. Cat Facts API integration."""
 
-from typing import List
 import logging
+from typing import List
 
 import requests
 import telebot
 from telebot import types
 
 from bot_func_abc import AtomicBotFunctionABC
-
 
 
 class CatFactsFunction(AtomicBotFunctionABC):
